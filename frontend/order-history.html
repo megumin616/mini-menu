@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>สถานะออเดอร์ | Cafe' In The Garden</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --forest:    #1B4332;
+      --sage:      #52796F;
+      --light-sage:#84A98C;
+      --cream:     #F8F4EF;
+      --beige:     #EDE8E0;
+      --terracotta:#BC6C25;
+      --gold:      #D4A017;
+    }
+    * { font-family:'Nunito',sans-serif; box-sizing:border-box; margin:0; padding:0; }
+    body { background:var(--cream); min-height:100vh; }
+    .display-font { font-family:'Playfair Display',serif; }
+
+    .navbar-top {
+      background: linear-gradient(135deg, var(--forest) 0%, var(--sage) 100%);
+      padding: 0.9rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      border-radius: 8px;
+      padding: 0.4rem 0.7rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      font-family: 'Nunito', sans-serif;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.3); }
+
+    /* STATUS CHIPS */
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.3rem 0.8rem;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    .status-PENDING  { background:#FEF3C7; color:#D97706; }
+    .status-COOKING  { background:#DBEAFE; color:#2563EB; }
+    .status-SERVED   { background:#D1FAE5; color:#059669; }
+
+    /* ORDER ITEM CARD */
+    .order-item-card {
+      background: white;
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      box-shadow: 0 2px 8px rgba(27,67,50,0.06);
+      margin-bottom: 0.6rem;
+    }
+    .order-img {
+      width: 60px; height: 60px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: var(--beige);
+      flex-shrink: 0;
+    }
+
+    /* BILL REQUEST BUTTON */
+    .btn-bill {
+      background: linear-gradient(135deg, var(--terracotta), #D4691E);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Nunito', sans-serif;
+    }
+    .btn-bill:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(188,108,37,0.35); }
+    .btn-bill:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+
+    /* PAYMENT MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 500;
+      display: flex;
+      align-items: flex-end;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .modal-overlay.show { opacity:1; pointer-events:auto; }
+    .modal {
+      background: white;
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.34, 1.1, 0.64, 1);
+      padding: 1.5rem 1.5rem 2rem;
+    }
+    .modal.show { transform: translateY(0); }
+    .handle {
+      width:40px; height:4px;
+      background:var(--beige);
+      border-radius:50px;
+      margin:0 auto 1.2rem;
+    }
+    .pay-option {
+      border: 2px solid var(--beige);
+      border-radius: 16px;
+      padding: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.8rem;
+    }
+    .pay-option:hover, .pay-option.selected {
+      border-color: var(--forest);
+      background: rgba(27,67,50,0.04);
+    }
+    .pay-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .qr-display {
+      background: white;
+      border: 3px solid var(--forest);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      margin-top: 1rem;
+      display: none;
+    }
+    .qr-display.show { display: block; }
+    .qr-placeholder {
+      width: 180px;
+      height: 180px;
+      margin: 0 auto;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 10px, rgba(27,67,50,0.1) 10px, rgba(27,67,50,0.1) 11px),
+        repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(27,67,50,0.1) 10px, rgba(27,67,50,0.1) 11px);
+      border: 3px solid var(--forest);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .btn-confirm-pay {
+      background: linear-gradient(135deg, var(--forest), var(--sage));
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 1rem;
+      font-size: 1rem;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      margin-top: 1rem;
+      font-family: 'Nunito', sans-serif;
+      transition: all 0.3s;
+    }
+    .btn-confirm-pay:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(27,67,50,0.3); }
+
+    /* TOTAL SUMMARY BAR */
+    .total-bar {
+      background: white;
+      border-radius: 16px;
+      padding: 1rem 1.2rem;
+      box-shadow: 0 2px 12px rgba(27,67,50,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.8rem;
+    }
+
+    /* STATUS INDICATOR DOTS */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #F59E0B;
+      animation: pulse 1.5s infinite;
+      display: inline-block;
+    }
+    .toast {
+      position: fixed;
+      top: 80px;
+      right: 1rem;
+      background: var(--forest);
+      color: white;
+      padding: 0.7rem 1.2rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 999;
+      transform: translateX(200px);
+      transition: transform 0.3s ease;
+    }
+    .toast.show { transform: translateX(0); }
+    .toast.error { background: #c0392b; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <div class="navbar-top">
+    <button class="back-btn" onclick="location.href='menu.html'">← กลับ</button>
+    <div style="flex:1">
+      <p class="display-font" style="color:white;font-size:1rem;font-weight:700">สถานะออเดอร์</p>
+    </div>
+    <span id="tableBadge"
+      style="background:rgba(255,255,255,0.2);color:white;padding:0.3rem 0.8rem;border-radius:50px;font-size:0.8rem;font-weight:600">
+      โต๊ะ -
+    </span>
+    <button onclick="loadOrder()"
+      style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:8px;padding:0.3rem 0.6rem;cursor:pointer;font-size:0.85rem;font-family:'Nunito',sans-serif">
+      🔄
+    </button>
+  </div>
+
+  <!-- CONTENT -->
+  <div style="padding:1rem;max-width:600px;margin:0 auto" id="mainContent">
+    <!-- Loading state -->
+    <div id="loadingState" style="text-align:center;padding:3rem;color:var(--light-sage)">
+      <div style="font-size:2rem;margin-bottom:0.5rem">⏳</div>
+      <p>กำลังโหลดออเดอร์...</p>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" style="text-align:center;padding:4rem 2rem;display:none">
+      <div style="font-size:4rem;margin-bottom:1rem">🍃</div>
+      <h3 class="display-font" style="color:var(--forest);font-size:1.3rem;margin-bottom:0.5rem">ยังไม่มีออเดอร์</h3>
+      <p style="color:#999;font-size:0.9rem;margin-bottom:1.5rem">ไปเลือกอาหารที่ชอบได้เลยค่ะ</p>
+      <button onclick="location.href='menu.html'"
+        style="background:var(--forest);color:white;border:none;border-radius:12px;padding:0.8rem 2rem;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">
+        🌿 ไปดูเมนู
+      </button>
+    </div>
+
+    <!-- Order Content -->
+    <div id="orderContent" style="display:none">
+      <!-- Summary bar -->
+      <div class="total-bar">
+        <div>
+          <p style="font-size:0.8rem;color:#888">ยอดรวมทั้งหมด</p>
+          <p class="display-font" style="font-size:1.5rem;font-weight:700;color:var(--terracotta)" id="grandTotal">฿0</p>
+        </div>
+        <div style="text-align:right">
+          <p style="font-size:0.8rem;color:#888">สถานะบิล</p>
+          <div id="orderStatusChip"></div>
+        </div>
+      </div>
+
+      <!-- Auto refresh notice -->
+      <div style="text-align:center;margin-bottom:0.8rem">
+        <span style="font-size:0.78rem;color:#aaa">
+          <span class="pulse-dot"></span> อัปเดตอัตโนมัติทุก 30 วินาที
+        </span>
+      </div>
+
+      <!-- Order items by status group -->
+      <div id="pendingGroup" style="margin-bottom:1rem;display:none">
+        <div class="section-header">
+          <h3 style="font-weight:700;color:#D97706;font-size:0.9rem">⏳ รอดำเนินการ</h3>
+          <span id="pendingCount" class="status-chip status-PENDING">0 รายการ</span>
+        </div>
+        <div id="pendingItems"></div>
+      </div>
+
+      <div id="cookingGroup" style="margin-bottom:1rem;display:none">
+        <div class="section-header">
+          <h3 style="font-weight:700;color:#2563EB;font-size:0.9rem">🍳 กำลังทำ</h3>
+          <span id="cookingCount" class="status-chip status-COOKING">0 รายการ</span>
+        </div>
+        <div id="cookingItems"></div>
+      </div>
+
+      <div id="servedGroup" style="margin-bottom:1rem;display:none">
+        <div class="section-header">
+          <h3 style="font-weight:700;color:#059669;font-size:0.9rem">✅ เสิร์ฟแล้ว</h3>
+          <span id="servedCount" class="status-chip status-SERVED">0 รายการ</span>
+        </div>
+        <div id="servedItems"></div>
+      </div>
+
+      <!-- Add more button -->
+      <button onclick="location.href='menu.html'"
+        style="background:white;border:2px dashed var(--light-sage);color:var(--sage);border-radius:14px;padding:0.9rem;font-size:0.9rem;font-weight:600;width:100%;cursor:pointer;margin-bottom:1rem;font-family:'Nunito',sans-serif;transition:all 0.2s">
+        + เพิ่มรายการอาหาร
+      </button>
+
+      <!-- Bill Request Button -->
+      <button class="btn-bill" id="billBtn" onclick="openPaymentModal()">
+        💳 เรียกเก็บเงิน
+      </button>
+      <div id="billRequestedMsg" style="display:none;text-align:center;padding:1rem;background:white;border-radius:14px;margin-top:0.5rem">
+        <p style="color:#D97706;font-weight:600">⏳ กำลังรอพนักงานมาเก็บเงิน...</p>
+        <p style="color:#999;font-size:0.85rem;margin-top:0.3rem">กรุณารอสักครู่นะคะ</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT MODAL -->
+  <div class="modal-overlay" id="payModalOverlay">
+    <div class="modal" id="payModal">
+      <div class="handle"></div>
+      <h2 class="display-font" style="color:var(--forest);font-size:1.3rem;margin-bottom:0.3rem">ชำระเงิน 💳</h2>
+      <p style="color:#888;font-size:0.85rem;margin-bottom:1.2rem">ยอดรวม: <strong class="display-font" style="color:var(--terracotta);font-size:1.1rem" id="modalTotal">฿0</strong></p>
+
+      <!-- Pay at Cashier -->
+      <div class="pay-option" id="opt-cashier" onclick="selectPayment('CASHIER')">
+        <div class="pay-icon" style="background:var(--cream)">💵</div>
+        <div>
+          <p style="font-weight:700;color:#2C2C2C">ชำระที่เคาน์เตอร์</p>
+          <p style="font-size:0.8rem;color:#888">พนักงานจะมารับเงินสดที่โต๊ะ</p>
+        </div>
+      </div>
+
+      <!-- QR PromptPay -->
+      <div class="pay-option" id="opt-promptpay" onclick="selectPayment('PROMPTPAY')">
+        <div class="pay-icon" style="background:#F0FDF4">📱</div>
+        <div>
+          <p style="font-weight:700;color:#2C2C2C">QR Code PromptPay</p>
+          <p style="font-size:0.8rem;color:#888">สแกน QR Code เพื่อโอนเงิน</p>
+        </div>
+      </div>
+
+      <!-- QR Code Display (Mock) -->
+      <div class="qr-display" id="qrDisplay">
+        <p style="font-size:0.85rem;color:#888;margin-bottom:1rem">สแกน QR Code เพื่อชำระเงิน</p>
+        <div class="qr-placeholder">
+          <div style="position:absolute;font-size:3rem">📲</div>
+          <!-- QR Corners -->
+          <div style="position:absolute;top:8px;left:8px;width:30px;height:30px;border-top:3px solid var(--forest);border-left:3px solid var(--forest)"></div>
+          <div style="position:absolute;top:8px;right:8px;width:30px;height:30px;border-top:3px solid var(--forest);border-right:3px solid var(--forest)"></div>
+          <div style="position:absolute;bottom:8px;left:8px;width:30px;height:30px;border-bottom:3px solid var(--forest);border-left:3px solid var(--forest)"></div>
+          <div style="position:absolute;bottom:8px;right:8px;width:30px;height:30px;border-bottom:3px solid var(--forest);border-right:3px solid var(--forest)"></div>
+        </div>
+        <p style="font-size:0.9rem;font-weight:700;color:var(--forest);margin-top:0.8rem">Cafe' In The Garden</p>
+        <p style="font-size:0.8rem;color:#888">PromptPay: 098-765-4321</p>
+      </div>
+
+      <button class="btn-confirm-pay" id="confirmPayBtn" onclick="confirmBillRequest()" style="display:none">
+        ✅ แจ้งพนักงานแล้ว รอดำเนินการ
+      </button>
+
+      <button onclick="closePaymentModal()"
+        style="background:transparent;border:2px solid var(--beige);border-radius:12px;padding:0.8rem;font-size:0.9rem;color:#888;width:100%;cursor:pointer;margin-top:0.5rem;font-family:'Nunito',sans-serif">
+        ยกเลิก
+      </button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="js/order-history.js"></script>
+</body>
+</html>

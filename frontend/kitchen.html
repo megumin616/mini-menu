@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kitchen Display | Cafe' In The Garden</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --forest:#1B4332; --sage:#52796F; --cream:#F8F4EF; --beige:#EDE8E0; --gold:#D4A017; }
+    * { font-family:'Nunito',sans-serif; box-sizing:border-box; margin:0; padding:0; }
+    body { background:#0F1F17; min-height:100vh; color:white; }
+    .display-font { font-family:'Playfair Display',serif; }
+
+    /* TOP BAR */
+    .topbar {
+      background: rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 0.8rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+    .live-badge {
+      background: #22C55E;
+      color: white;
+      padding: 0.25rem 0.7rem;
+      border-radius: 50px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .live-dot { width:7px;height:7px;border-radius:50%;background:white;animation:blink 1.2s infinite; }
+
+    /* COLUMN HEADERS */
+    .columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      height: calc(100vh - 58px);
+    }
+    .col {
+      border-right: 1px solid rgba(255,255,255,0.06);
+      overflow-y: auto;
+      padding: 0.8rem;
+    }
+    .col:last-child { border-right: none; }
+    .col-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 10px;
+      margin-bottom: 0.8rem;
+      font-weight: 800;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .col-pending { background: rgba(251,191,36,0.15); color:#FBB924; border:1px solid rgba(251,191,36,0.25); }
+    .col-cooking { background: rgba(59,130,246,0.15); color:#60A5FA; border:1px solid rgba(59,130,246,0.25); }
+    .col-served  { background: rgba(34,197,94,0.15);  color:#4ADE80; border:1px solid rgba(34,197,94,0.25); }
+
+    /* ORDER TICKETS */
+    .ticket {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      margin-bottom: 0.7rem;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+    .ticket:hover { background: rgba(255,255,255,0.08); }
+    .ticket-header {
+      padding: 0.7rem 0.9rem;
+      background: rgba(255,255,255,0.07);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .table-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .time-badge {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.08);
+      padding: 0.2rem 0.5rem;
+      border-radius: 50px;
+    }
+    .ticket-item {
+      padding: 0.5rem 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .ticket-item:last-child { border-bottom: none; }
+    .item-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.9);
+    }
+    .item-qty {
+      background: var(--gold);
+      color: #1B4332;
+      border-radius: 6px;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .ticket-actions {
+      padding: 0.6rem 0.9rem;
+      display: flex;
+      gap: 0.4rem;
+    }
+    .action-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 0.4rem 0.7rem;
+      font-size: 0.77rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1;
+      font-family: 'Nunito', sans-serif;
+    }
+    .btn-cook  { background: rgba(59,130,246,0.2); color:#60A5FA; border:1px solid rgba(59,130,246,0.3); }
+    .btn-cook:hover { background: rgba(59,130,246,0.4); }
+    .btn-serve { background: rgba(34,197,94,0.2);  color:#4ADE80; border:1px solid rgba(34,197,94,0.3); }
+    .btn-serve:hover { background: rgba(34,197,94,0.4); }
+
+    /* STATS BAR */
+    .stat-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 0.6rem 1rem;
+      text-align: center;
+    }
+    .stat-number { font-family:'Playfair Display',serif; font-size:1.5rem; font-weight:700; }
+    .stat-label  { font-size:0.7rem; color:rgba(255,255,255,0.5); margin-top:0.1rem; }
+
+    /* EMPTY STATE */
+    .empty-col {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: rgba(255,255,255,0.2);
+    }
+    .empty-col .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .empty-col p { font-size: 0.82rem; }
+
+    /* SCROLLBAR */
+    .col::-webkit-scrollbar { width: 4px; }
+    .col::-webkit-scrollbar-track { background: transparent; }
+    .col::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 50px; }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <span class="display-font" style="font-size:1.1rem;font-weight:700;color:white">🌿 Kitchen Display</span>
+      <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:flex;gap:0.6rem" id="statsBar">
+      <div class="stat-card">
+        <div class="stat-number" style="color:#FBB924" id="statPending">0</div>
+        <div class="stat-label">รอ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:#60A5FA" id="statCooking">0</div>
+        <div class="stat-label">กำลังทำ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color:#4ADE80" id="statServed">0</div>
+        <div class="stat-label">เสิร์ฟแล้ว</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <span style="font-size:0.78rem;color:rgba(255,255,255,0.4)">อัปเดต: <span id="lastUpdate">-</span></span>
+      <button onclick="loadKitchenOrders()"
+        style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:white;border-radius:8px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.8rem;font-family:'Nunito',sans-serif">
+        🔄 Refresh
+      </button>
+      <button onclick="logout()"
+        style="background:rgba(255,80,80,0.2);border:1px solid rgba(255,80,80,0.3);color:#FF8080;border-radius:8px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.8rem;font-family:'Nunito',sans-serif">
+        ออกจากระบบ
+      </button>
+    </div>
+  </div>
+
+  <!-- 3-COLUMN KANBAN -->
+  <div class="columns">
+    <!-- PENDING -->
+    <div class="col" id="colPending">
+      <div class="col-header col-pending">⏳ รอดำเนินการ <span id="pendingBadge" style="margin-left:auto;background:rgba(251,191,36,0.3);border-radius:50px;padding:0.1rem 0.5rem">0</span></div>
+      <div id="pendingItems"><div class="empty-col"><div class="icon">✅</div><p>ไม่มีออเดอร์รอ</p></div></div>
+    </div>
+
+    <!-- COOKING -->
+    <div class="col" id="colCooking">
+      <div class="col-header col-cooking">🍳 กำลังทำ <span id="cookingBadge" style="margin-left:auto;background:rgba(59,130,246,0.3);border-radius:50px;padding:0.1rem 0.5rem">0</span></div>
+      <div id="cookingItems"><div class="empty-col"><div class="icon">🍽️</div><p>ไม่มีออเดอร์กำลังทำ</p></div></div>
+    </div>
+
+    <!-- SERVED (last 10) -->
+    <div class="col" id="colServed">
+      <div class="col-header col-served">✅ เสิร์ฟแล้ว <span id="servedBadge" style="margin-left:auto;background:rgba(34,197,94,0.3);border-radius:50px;padding:0.1rem 0.5rem">0</span></div>
+      <div id="servedItems"><div class="empty-col"><div class="icon">🌿</div><p>ยังไม่มีรายการเสิร์ฟ</p></div></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE  = 'http://localhost:3000/api';
+    let allOrders   = [];
+    let refreshInterval;
+
+    function getToken() { return localStorage.getItem('staffToken'); }
+
+    async function apiCall(url, options = {}) {
+      const token = getToken();
+      const res = await fetch(`${API_BASE}${url}`, {
+        ...options,
+        headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}`, ...options.headers }
+      });
+      if (res.status === 401) { logout(); return null; }
+      return res.json();
+    }
+
+    // ===================================================
+    // loadKitchenOrders: ดึงออเดอร์ทั้งหมดจาก API
+    // ===================================================
+    async function loadKitchenOrders() {
+      try {
+        const data = await apiCall('/orders/kitchen');
+        if (!data) return;
+        allOrders = data.data || [];
+        renderKanban();
+        updateStats();
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('th-TH');
+      } catch (err) {
+        console.error('Kitchen load error:', err);
+      }
+    }
+
+    // ===================================================
+    // renderKanban: แสดงออเดอร์ใน 3 คอลัมน์
+    // ===================================================
+    function renderKanban() {
+      // จัดกลุ่ม items ตาม status
+      const pending = [];
+      const cooking = [];
+      const served  = [];
+
+      allOrders.forEach(order => {
+        order.items.forEach(item => {
+          const entry = { ...item, tableNumber: order.tableNumber, orderTime: order.orderTime };
+          if (item.status === 'PENDING') pending.push(entry);
+          if (item.status === 'COOKING') cooking.push(entry);
+          if (item.status === 'SERVED')  served.push(entry);
+        });
+      });
+
+      renderColumn('pendingItems', 'pendingBadge', pending, 'pending');
+      renderColumn('cookingItems', 'cookingBadge', cooking, 'cooking');
+      renderColumn('servedItems',  'servedBadge',  served.slice(-10).reverse(), 'served');
+    }
+
+    function renderColumn(containerId, badgeId, items, type) {
+      const container = document.getElementById(containerId);
+      const badge     = document.getElementById(badgeId);
+      badge.textContent = items.length;
+
+      if (items.length === 0) {
+        const emptyText = { pending:'ไม่มีออเดอร์รอ', cooking:'ไม่มีออเดอร์กำลังทำ', served:'ยังไม่มีรายการเสิร์ฟ' }[type];
+        const emptyIcon = { pending:'✅', cooking:'🍽️', served:'🌿' }[type];
+        container.innerHTML = `<div class="empty-col"><div class="icon">${emptyIcon}</div><p>${emptyText}</p></div>`;
+        return;
+      }
+
+      // Group by table (for pending/cooking)
+      // หรือแสดงทีละรายการ
+      container.innerHTML = items.map(item => `
+        <div class="ticket" id="item-${item.id}">
+          <div class="ticket-header">
+            <span class="table-num">โต๊ะ ${item.tableNumber}</span>
+            <span class="time-badge">${timeSince(item.time || item.orderTime)}</span>
+          </div>
+          <div class="ticket-item">
+            <span class="item-name">${item.name}</span>
+            <span class="item-qty">x${item.quantity}</span>
+          </div>
+          ${item.notes ? `<div style="padding:0.3rem 0.9rem;font-size:0.75rem;color:#F59E0B;opacity:0.8">📝 ${item.notes}</div>` : ''}
+          <div class="ticket-actions">
+            ${type === 'pending' ? `<button class="action-btn btn-cook" onclick="updateStatus(${item.id},'COOKING')">🍳 เริ่มทำ</button>` : ''}
+            ${type === 'cooking' ? `<button class="action-btn btn-serve" onclick="updateStatus(${item.id},'SERVED')">✅ เสิร์ฟแล้ว</button>` : ''}
+            ${type === 'served'  ? `<div style="text-align:center;padding:0.2rem;font-size:0.78rem;color:#4ADE80;width:100%">✅ เสร็จแล้ว</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ===================================================
+    // updateStatus: อัปเดตสถานะอาหารในครัว
+    // ===================================================
+    async function updateStatus(itemId, newStatus) {
+      try {
+        const data = await apiCall(`/orders/items/${itemId}/status`, {
+          method: 'PATCH',
+          body:   JSON.stringify({ status: newStatus })
+        });
+        if (data && data.success) {
+          // ลบ animation
+          const el = document.getElementById(`item-${itemId}`);
+          if (el) {
+            el.style.transform  = 'scale(0.95)';
+            el.style.opacity    = '0.5';
+            el.style.transition = 'all 0.3s';
+          }
+          setTimeout(loadKitchenOrders, 300);
+        }
+      } catch (err) {
+        console.error('Update status error:', err);
+      }
+    }
+
+    function updateStats() {
+      let pending = 0, cooking = 0, served = 0;
+      allOrders.forEach(o => {
+        o.items.forEach(i => {
+          if (i.status === 'PENDING') pending++;
+          if (i.status === 'COOKING') cooking++;
+          if (i.status === 'SERVED')  served++;
+        });
+      });
+      document.getElementById('statPending').textContent = pending;
+      document.getElementById('statCooking').textContent = cooking;
+      document.getElementById('statServed').textContent  = served;
+    }
+
+    // แปลง timestamp เป็น "x นาทีที่แล้ว"
+    function timeSince(dateStr) {
+      const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
+      if (diff < 1) return 'เมื่อกี้';
+      if (diff < 60) return `${diff} นาที`;
+      return `${Math.floor(diff/60)} ชม.`;
+    }
+
+    function logout() {
+      localStorage.removeItem('staffToken');
+      localStorage.removeItem('staffName');
+      localStorage.removeItem('staffRole');
+      window.location.href = 'staff-login.html';
+    }
+
+    // ===================================================
+    // init
+    // ===================================================
+    function init() {
+      if (!getToken()) { window.location.href = 'staff-login.html'; return; }
+      loadKitchenOrders();
+      // Auto-refresh ทุก 15 วินาที
+      refreshInterval = setInterval(loadKitchenOrders, 15000);
+    }
+
+    window.addEventListener('beforeunload', () => clearInterval(refreshInterval));
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>แคชเชียร์ | Cafe' In The Garden</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --forest:#1B4332; --sage:#52796F; --light-sage:#84A98C; --cream:#F8F4EF; --beige:#EDE8E0; --terracotta:#BC6C25; --gold:#D4A017; }
+    * { font-family:'Nunito',sans-serif; box-sizing:border-box; margin:0; padding:0; }
+    body { background:var(--cream); min-height:100vh; }
+    .display-font { font-family:'Playfair Display',serif; }
+
+    .topbar {
+      background: linear-gradient(135deg, var(--forest) 0%, var(--sage) 100%);
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .content { padding: 1.2rem; max-width: 1200px; margin: 0 auto; }
+
+    /* TABLE CARDS GRID */
+    .tables-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+    .table-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.1rem;
+      box-shadow: 0 2px 10px rgba(27,67,50,0.07);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+      text-align: center;
+    }
+    .table-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(27,67,50,0.12); }
+    .table-card.selected { border-color:var(--forest); box-shadow:0 0 0 4px rgba(27,67,50,0.1); }
+    .table-card.available  { opacity: 0.55; }
+    .table-card.occupied   { border-color: rgba(251,191,36,0.4); }
+    .table-card.bill-requested { border-color: rgba(239,68,68,0.5); animation: glow 1.5s infinite alternate; }
+    @keyframes glow { from{box-shadow:0 2px 10px rgba(27,67,50,0.07)} to{box-shadow:0 0 20px rgba(239,68,68,0.2)} }
+
+    .table-num-big {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 0.3rem;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin: 0 auto 0.5rem;
+    }
+    .dot-available     { background: #22C55E; }
+    .dot-occupied      { background: #F59E0B; }
+    .dot-bill-requested{ background: #EF4444; }
+
+    /* BILL PANEL */
+    .bill-panel {
+      background: white;
+      border-radius: 20px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 20px rgba(27,67,50,0.1);
+      display: none;
+    }
+    .bill-panel.show { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    .bill-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--cream);
+      font-size: 0.88rem;
+    }
+    .bill-item:last-child { border-bottom: none; }
+    .bill-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: var(--cream);
+      border-radius: 12px;
+      margin: 1rem 0;
+    }
+    .btn-close-table {
+      background: linear-gradient(135deg, var(--forest), var(--sage));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 0.9rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Nunito', sans-serif;
+    }
+    .btn-close-table:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(27,67,50,0.3); }
+    .pay-method-btn {
+      flex: 1;
+      border: 2px solid var(--beige);
+      background: white;
+      border-radius: 10px;
+      padding: 0.6rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Nunito', sans-serif;
+      color: #555;
+    }
+    .pay-method-btn.selected {
+      border-color: var(--forest);
+      background: var(--forest);
+      color: white;
+    }
+    .toast {
+      position:fixed; bottom:2rem; right:1.5rem;
+      background:var(--forest); color:white;
+      padding:0.8rem 1.5rem; border-radius:12px;
+      font-size:0.85rem; font-weight:600;
+      transform:translateY(80px); transition:transform 0.3s ease;
+      z-index:999; box-shadow:0 4px 16px rgba(27,67,50,0.3);
+    }
+    .toast.show { transform:translateY(0); }
+    .toast.error { background:#c0392b; }
+    .status-pill {
+      padding: 0.2rem 0.6rem;
+      border-radius: 50px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .pill-available      { background:#D1FAE5; color:#059669; }
+    .pill-occupied        { background:#FEF3C7; color:#D97706; }
+    .pill-bill-requested  { background:#FEE2E2; color:#DC2626; }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      color: var(--forest);
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div>
+      <p class="display-font" style="color:white;font-size:1.1rem;font-weight:700">🌿 Cashier Dashboard</p>
+      <p style="color:rgba(255,255,255,0.6);font-size:0.75rem" id="staffNameDisplay">-</p>
+    </div>
+    <div style="display:flex;gap:0.6rem">
+      <button onclick="loadTables()"
+        style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:8px;padding:0.4rem 0.8rem;cursor:pointer;font-size:0.85rem;font-family:'Nunito',sans-serif">
+        🔄 รีเฟรช
+      </button>
+      <button onclick="window.open('kitchen.html')"
+        style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:8px;padding:0.4rem 0.8rem;cursor:pointer;font-size:0.85rem;font-family:'Nunito',sans-serif">
+        🍳 ครัว
+      </button>
+      <button onclick="logout()"
+        style="background:rgba(255,80,80,0.25);border:1px solid rgba(255,80,80,0.4);color:#FCA5A5;border-radius:8px;padding:0.4rem 0.8rem;cursor:pointer;font-size:0.85rem;font-family:'Nunito',sans-serif">
+        ออกจากระบบ
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Summary Stats -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:1.5rem" id="statsRow">
+      <div style="background:white;border-radius:14px;padding:1rem;text-align:center;box-shadow:0 2px 10px rgba(27,67,50,0.06)">
+        <p class="display-font" style="font-size:2rem;font-weight:700;color:#22C55E" id="stat-available">-</p>
+        <p style="font-size:0.78rem;color:#888">โต๊ะว่าง</p>
+      </div>
+      <div style="background:white;border-radius:14px;padding:1rem;text-align:center;box-shadow:0 2px 10px rgba(27,67,50,0.06)">
+        <p class="display-font" style="font-size:2rem;font-weight:700;color:#F59E0B" id="stat-occupied">-</p>
+        <p style="font-size:0.78rem;color:#888">มีลูกค้า</p>
+      </div>
+      <div style="background:white;border-radius:14px;padding:1rem;text-align:center;box-shadow:0 2px 10px rgba(27,67,50,0.06)">
+        <p class="display-font" style="font-size:2rem;font-weight:700;color:#EF4444" id="stat-bill">-</p>
+        <p style="font-size:0.78rem;color:#888">รอเก็บเงิน 🔔</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:1.2rem;align-items:start">
+      <!-- LEFT: Tables Grid -->
+      <div>
+        <p class="section-title">สถานะโต๊ะทั้งหมด</p>
+        <div class="tables-grid" id="tablesGrid">
+          <!-- Loading -->
+          <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--light-sage)">⏳ กำลังโหลด...</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Bill Detail -->
+      <div>
+        <p class="section-title" id="billPanelTitle">เลือกโต๊ะเพื่อดูบิล</p>
+        <!-- Default empty state -->
+        <div id="emptyBillPanel" style="background:white;border-radius:20px;padding:3rem 1.5rem;text-align:center;box-shadow:0 4px 20px rgba(27,67,50,0.07)">
+          <div style="font-size:3rem;margin-bottom:1rem">🧾</div>
+          <p style="color:#aaa;font-size:0.9rem">คลิกที่โต๊ะเพื่อดูบิล</p>
+        </div>
+        <div class="bill-panel" id="billPanel">
+          <!-- Bill content injected by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000/api';
+    let selectedTableId = null;
+    let selectedPayMethod = 'CASHIER';
+    let autoRefresh;
+
+    function getToken() { return localStorage.getItem('staffToken'); }
+
+    async function apiCall(url, options = {}) {
+      const token = getToken();
+      const res = await fetch(`${API_BASE}${url}`, {
+        ...options,
+        headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}`, ...options.headers }
+      });
+      if (res.status === 401) { logout(); return null; }
+      return res.json();
+    }
+
+    // ===================================================
+    // loadTables: ดูภาพรวมทุกโต๊ะ
+    // ===================================================
+    async function loadTables() {
+      try {
+        const data = await apiCall('/orders/tables-overview');
+        if (!data) return;
+        renderTables(data.data);
+        updateStats(data.data);
+      } catch (err) {
+        console.error('Load tables error:', err);
+      }
+    }
+
+    function renderTables(tables) {
+      const grid = document.getElementById('tablesGrid');
+      grid.innerHTML = tables.map(t => {
+        const statusClass = {
+          AVAILABLE:      'available',
+          OCCUPIED:       'occupied',
+          BILL_REQUESTED: 'bill-requested'
+        }[t.status] || 'available';
+
+        const dotClass = {
+          AVAILABLE:      'dot-available',
+          OCCUPIED:       'dot-occupied',
+          BILL_REQUESTED: 'dot-bill-requested'
+        }[t.status] || 'dot-available';
+
+        const pillClass = {
+          AVAILABLE:      'pill-available',
+          OCCUPIED:       'pill-occupied',
+          BILL_REQUESTED: 'pill-bill-requested'
+        }[t.status];
+
+        const statusTh = { AVAILABLE:'ว่าง', OCCUPIED:'มีลูกค้า', BILL_REQUESTED:'รอเก็บเงิน 🔔' }[t.status];
+
+        return `
+          <div class="table-card ${statusClass} ${selectedTableId === t.id ? 'selected' : ''}"
+               onclick="selectTable(${t.id}, ${t.table_number}, '${t.status}')">
+            <div class="status-dot ${dotClass}"></div>
+            <div class="table-num-big">${t.table_number}</div>
+            <span class="status-pill ${pillClass}">${statusTh}</span>
+            ${t.total_amount ? `<p style="font-size:0.8rem;color:var(--terracotta);font-weight:700;margin-top:0.3rem">฿${Number(t.total_amount).toLocaleString()}</p>` : ''}
+            ${t.item_count ? `<p style="font-size:0.72rem;color:#aaa">${t.item_count} รายการ</p>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateStats(tables) {
+      const avail = tables.filter(t => t.status === 'AVAILABLE').length;
+      const occ   = tables.filter(t => t.status === 'OCCUPIED').length;
+      const bill  = tables.filter(t => t.status === 'BILL_REQUESTED').length;
+      document.getElementById('stat-available').textContent = avail;
+      document.getElementById('stat-occupied').textContent  = occ;
+      document.getElementById('stat-bill').textContent      = bill;
+    }
+
+    // ===================================================
+    // selectTable: คลิกโต๊ะเพื่อดูบิล
+    // ===================================================
+    async function selectTable(tableId, tableNumber, status) {
+      selectedTableId = tableId;
+
+      // อัปเดต title
+      document.getElementById('billPanelTitle').textContent = `บิลโต๊ะ ${tableNumber}`;
+
+      if (status === 'AVAILABLE') {
+        document.getElementById('emptyBillPanel').style.display = 'block';
+        document.getElementById('billPanel').classList.remove('show');
+        document.getElementById('emptyBillPanel').innerHTML = `
+          <div style="font-size:3rem;margin-bottom:1rem">🟢</div>
+          <p style="color:#22C55E;font-weight:700">โต๊ะว่าง</p>
+          <p style="color:#aaa;font-size:0.85rem;margin-top:0.3rem">ยังไม่มีลูกค้า</p>
+        `;
+        // Highlight selected
+        document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
+        document.querySelector(`.table-card:nth-child(${tableId})`);
+        loadTables();
+        return;
+      }
+
+      // ดึงบิล
+      try {
+        const data = await apiCall(`/orders/bill/${tableId}`);
+        if (!data || !data.data) {
+          document.getElementById('emptyBillPanel').style.display = 'block';
+          document.getElementById('billPanel').classList.remove('show');
+          return;
+        }
+
+        renderBill(data.data, tableNumber, status);
+        loadTables(); // refresh grid
+      } catch (err) {
+        console.error('Get bill error:', err);
+      }
+    }
+
+    function renderBill(bill, tableNumber, status) {
+      document.getElementById('emptyBillPanel').style.display = 'none';
+      const panel = document.getElementById('billPanel');
+      panel.classList.add('show');
+
+      const isBillReq = status === 'BILL_REQUESTED';
+
+      panel.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h3 class="display-font" style="color:var(--forest)">โต๊ะ ${tableNumber}</h3>
+          <span class="status-pill ${isBillReq ? 'pill-bill-requested' : 'pill-occupied'}">
+            ${isBillReq ? '🔔 รอเก็บเงิน' : '🟡 กำลังสั่งอาหาร'}
+          </span>
+        </div>
+
+        <!-- รายการอาหาร -->
+        <div style="margin-bottom:0.5rem">
+          ${bill.items.map(item => `
+            <div class="bill-item">
+              <span style="color:#444;flex:1">${item.name}</span>
+              <span style="color:#888;margin:0 0.5rem;font-size:0.82rem">x${item.quantity}</span>
+              <span style="font-weight:700;color:#2C2C2C">฿${Number(item.subtotal).toLocaleString()}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Total -->
+        <div class="bill-total">
+          <div>
+            <p style="font-size:0.8rem;color:#888">ยอดรวมทั้งสิ้น</p>
+            <p class="display-font" style="font-size:1.8rem;font-weight:700;color:var(--terracotta)">
+              ฿${Number(bill.totalAmount).toLocaleString()}
+            </p>
+          </div>
+          <div style="font-size:2rem">🧾</div>
+        </div>
+
+        <!-- Payment Method -->
+        <p style="font-size:0.82rem;font-weight:700;color:#555;margin-bottom:0.5rem">วิธีชำระเงิน</p>
+        <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+          <button class="pay-method-btn selected" id="pm-cashier" onclick="selectPayMethod('CASHIER')">
+            💵 เงินสด
+          </button>
+          <button class="pay-method-btn" id="pm-promptpay" onclick="selectPayMethod('PROMPTPAY')">
+            📱 QR PromptPay
+          </button>
+        </div>
+
+        <!-- Close Table Button -->
+        <button class="btn-close-table" onclick="closeTable(${bill.totalAmount})">
+          ✅ รับชำระเงิน & เคลียร์โต๊ะ
+        </button>
+
+        <p style="text-align:center;font-size:0.78rem;color:#aaa;margin-top:0.8rem">
+          เปิดบิลตั้งแต่: ${new Date(bill.createdAt).toLocaleTimeString('th-TH')}
+        </p>
+      `;
+
+      // Set default pay method
+      selectedPayMethod = 'CASHIER';
+    }
+
+    function selectPayMethod(method) {
+      selectedPayMethod = method;
+      document.getElementById('pm-cashier').classList.toggle('selected', method === 'CASHIER');
+      document.getElementById('pm-promptpay').classList.toggle('selected', method === 'PROMPTPAY');
+    }
+
+    // ===================================================
+    // closeTable: ปิดโต๊ะหลังรับชำระเงิน
+    // ===================================================
+    async function closeTable(total) {
+      if (!selectedTableId) return;
+
+      const confirmed = confirm(`ยืนยันรับชำระเงิน ฿${Number(total).toLocaleString()} บาท\nวิธี: ${selectedPayMethod === 'CASHIER' ? 'เงินสด' : 'QR PromptPay'}?`);
+      if (!confirmed) return;
+
+      try {
+        const data = await apiCall(`/orders/close-table/${selectedTableId}`, {
+          method: 'POST',
+          body:   JSON.stringify({ paymentMethod: selectedPayMethod })
+        });
+
+        if (data && data.success) {
+          showToast('✅ เคลียร์โต๊ะสำเร็จ!');
+          selectedTableId = null;
+          document.getElementById('billPanel').classList.remove('show');
+          document.getElementById('emptyBillPanel').style.display = 'block';
+          document.getElementById('emptyBillPanel').innerHTML = `
+            <div style="font-size:3rem;margin-bottom:1rem">🎉</div>
+            <p style="color:var(--forest);font-weight:700">เคลียร์โต๊ะสำเร็จ!</p>
+            <p style="color:#aaa;font-size:0.85rem;margin-top:0.3rem">ขอบคุณที่ใช้บริการ</p>
+          `;
+          loadTables();
+        } else {
+          showToast(`❌ ${data?.message}`, 'error');
+        }
+      } catch (err) {
+        showToast('❌ เกิดข้อผิดพลาด', 'error');
+      }
+    }
+
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className   = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function logout() {
+      localStorage.removeItem('staffToken');
+      localStorage.removeItem('staffName');
+      window.location.href = 'staff-login.html';
+    }
+
+    function init() {
+      if (!getToken()) { window.location.href = 'staff-login.html'; return; }
+      const name = localStorage.getItem('staffName');
+      if (name) document.getElementById('staffNameDisplay').textContent = `สวัสดี, ${name}`;
+      loadTables();
+      autoRefresh = setInterval(loadTables, 20000);
+    }
+
+    window.addEventListener('beforeunload', () => clearInterval(autoRefresh));
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
