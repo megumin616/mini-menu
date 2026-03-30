@@ -43,6 +43,7 @@ app.use(express.static(path.join(__dirname, '..', 'frontend')));
 // Routes: กำหนดว่า URL pattern ไหน → ไปหา Router ไหน
 // ===================================================
 app.use('/api/auth',   require('./routes/authRoutes'));
+app.use('/api/users',  require('./routes/userRoutes'));
 app.use('/api/menus',  require('./routes/menuRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 

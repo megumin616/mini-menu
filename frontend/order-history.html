@@ -341,7 +341,8 @@
     <div class="modal" id="payModal">
       <div class="handle"></div>
       <h2 class="display-font" style="color:var(--forest);font-size:1.3rem;margin-bottom:0.3rem">ชำระเงิน 💳</h2>
-      <p style="color:#888;font-size:0.85rem;margin-bottom:1.2rem">ยอดรวม: <strong class="display-font" style="color:var(--terracotta);font-size:1.1rem" id="modalTotal">฿0</strong></p>
+      <p style="color:#888;font-size:0.85rem;margin-bottom:0.6rem">ยอดรวม: <strong class="display-font" style="color:var(--terracotta);font-size:1.1rem" id="modalTotal">฿0</strong></p>
+      <p style="color:#059669;font-size:0.8rem;margin-bottom:1.2rem;font-weight:600">✓ แจ้งพนักงานให้มาเก็บเงินแล้ว — เลือกวิธีชำระด้านล่างได้ตามสะดวก</p>
 
       <!-- Pay at Cashier -->
       <div class="pay-option" id="opt-cashier" onclick="selectPayment('CASHIER')">
@@ -377,7 +378,7 @@
       </div>
 
       <button class="btn-confirm-pay" id="confirmPayBtn" onclick="confirmBillRequest()" style="display:none">
-        ✅ แจ้งพนักงานแล้ว รอดำเนินการ
+        รับทราบ / ปิด
       </button>
 
       <button onclick="closePaymentModal()"

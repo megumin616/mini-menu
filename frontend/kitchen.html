@@ -200,6 +200,10 @@
         style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:white;border-radius:8px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.8rem;font-family:'Nunito',sans-serif">
         🔄 Refresh
       </button>
+      <button type="button" id="btnAddStaff" onclick="location.href='staff-add.html'"
+        style="display:none;background:rgba(212,160,23,0.2);border:1px solid rgba(212,160,23,0.4);color:#FDE68A;border-radius:8px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.8rem;font-family:'Nunito',sans-serif">
+        ➕ เพิ่มพนักงาน
+      </button>
       <button onclick="logout()"
         style="background:rgba(255,80,80,0.2);border:1px solid rgba(255,80,80,0.3);color:#FF8080;border-radius:8px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.8rem;font-family:'Nunito',sans-serif">
         ออกจากระบบ
@@ -376,6 +380,9 @@
     // ===================================================
     function init() {
       if (!getToken()) { window.location.href = 'staff-login.html'; return; }
+      if (localStorage.getItem('staffRole') === 'ADMIN') {
+        document.getElementById('btnAddStaff').style.display = 'inline-block';
+      }
       loadKitchenOrders();
       // Auto-refresh ทุก 15 วินาที
       refreshInterval = setInterval(loadKitchenOrders, 15000);

@@ -2,7 +2,7 @@
 // 🌿 js/order-history.js - ระบบดูสถานะออเดอร์
 // ===================================================
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = 'http://localhost:3000/api';
 let selectedPayment = null;
 let autoRefreshInterval = null;
 
@@ -128,16 +128,58 @@ function statusText(s) { return { PENDING:'รอดำเนินการ', C
 
 // ===================================================
 // Payment Modal
+// แจ้ง backend ทันทีเมื่อกด «เรียกเก็บเงิน» (POST /orders/request-bill)
+// Modal ใช้แสดงตัวเลือกชำระเงิน + ปิดเมื่ออ่านแล้วเท่านั้น
 // ===================================================
-function openPaymentModal() {
-  const total = document.getElementById('grandTotal').textContent;
-  document.getElementById('modalTotal').textContent = total;
-  document.getElementById('payModalOverlay').classList.add('show');
-  document.getElementById('payModal').classList.add('show');
-  selectedPayment = null;
-  document.querySelectorAll('.pay-option').forEach(o => o.classList.remove('selected'));
-  document.getElementById('qrDisplay').classList.remove('show');
-  document.getElementById('confirmPayBtn').style.display = 'none';
+async function openPaymentModal() {
+  const billBtn = document.getElementById('billBtn');
+  if (billBtn.style.display === 'none') return;
+
+  billBtn.disabled    = true;
+  const prevLabel     = billBtn.textContent;
+  billBtn.textContent = '⏳ กำลังแจ้งพนักงาน...';
+
+  try {
+    const data = await apiCall('/orders/request-bill', {
+      method: 'POST',
+      body:   JSON.stringify({})
+    });
+
+    if (!data) {
+      billBtn.disabled = false;
+      billBtn.textContent = prevLabel;
+      return;
+    }
+
+    if (!data.success) {
+      showToast(`❌ ${data.message}`, 'error');
+      billBtn.disabled = false;
+      billBtn.textContent = prevLabel;
+      return;
+    }
+
+    showToast('🙏 แจ้งพนักงานแล้ว! รอสักครู่นะคะ');
+    await loadOrder();
+
+    const total = document.getElementById('grandTotal').textContent;
+    document.getElementById('modalTotal').textContent = total;
+    document.getElementById('payModalOverlay').classList.add('show');
+    document.getElementById('payModal').classList.add('show');
+    selectedPayment = null;
+    document.querySelectorAll('.pay-option').forEach(o => o.classList.remove('selected'));
+    document.getElementById('qrDisplay').classList.remove('show');
+
+    const confirmBtn = document.getElementById('confirmPayBtn');
+    confirmBtn.style.display = 'block';
+    confirmBtn.disabled      = false;
+    confirmBtn.textContent   = 'รับทราบ / ปิด';
+  } catch (err) {
+    console.error('request-bill:', err);
+    showToast('❌ เกิดข้อผิดพลาด', 'error');
+  }
+
+  billBtn.disabled    = false;
+  billBtn.textContent = prevLabel;
 }
 
 function closePaymentModal() {
@@ -155,31 +197,10 @@ function selectPayment(method) {
   } else {
     document.getElementById('qrDisplay').classList.remove('show');
   }
-
-  document.getElementById('confirmPayBtn').style.display = 'block';
 }
 
-async function confirmBillRequest() {
-  const btn = document.getElementById('confirmPayBtn');
-  btn.disabled    = true;
-  btn.textContent = '⏳ กำลังส่งคำขอ...';
-
-  try {
-    const data = await apiCall('/orders/request-bill', { method: 'POST' });
-    if (data && data.success) {
-      closePaymentModal();
-      showToast('🙏 แจ้งพนักงานแล้ว! รอสักครู่นะคะ');
-      loadOrder(); // reload
-    } else {
-      showToast(`❌ ${data?.message}`, 'error');
-      btn.disabled    = false;
-      btn.textContent = '✅ แจ้งพนักงานแล้ว รอดำเนินการ';
-    }
-  } catch {
-    showToast('❌ เกิดข้อผิดพลาด', 'error');
-    btn.disabled    = false;
-    btn.textContent = '✅ แจ้งพนักงานแล้ว รอดำเนินการ';
-  }
+function confirmBillRequest() {
+  closePaymentModal();
 }
 
 function showToast(msg, type = '') {
