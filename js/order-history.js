@@ -2,7 +2,7 @@
 // 🌿 js/order-history.js - ระบบดูสถานะออเดอร์
 // ===================================================
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'https://cafe-in-the-garden.onrender.com';
 let selectedPayment = null;
 let autoRefreshInterval = null;
 
