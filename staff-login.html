@@ -156,7 +156,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const API_BASE     = 'http://localhost:3000/api';
+    const API_BASE     = 'https://cafe-in-the-garden.onrender.com';
     let selectedRole   = 'kitchen';
 
     function selectRole(role, btn) {
@@ -189,7 +189,7 @@
 
       try {
         // เรียก API Staff Login
-        const response = await fetch(`${API_BASE}/auth/staff-login`, {
+        const response = await fetch(`${API_BASE}/api/auth/staff-login`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ username, password })
