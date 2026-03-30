@@ -64,8 +64,8 @@ async function loadMenus() {
     // เรียก API 2 อัน พร้อมกัน (parallel) ด้วย Promise.all
     // เร็วกว่าเรียกทีละอัน
     const [menuRes, catRes] = await Promise.all([
-      apiCall('/menus'),
-      apiCall('/menus/categories')
+      apiCall('/api/menus'),
+      apiCall('/api/menus/categories')
     ]);
 
     if (!menuRes || !catRes) return;
@@ -344,7 +344,7 @@ async function confirmOrder() {
   try {
     // POST /api/orders
     // Backend จะอ่าน tableId จาก JWT Token (ไม่ต้องส่ง tableId แยก)
-    const data = await apiCall('/orders', {
+    const data = await apiCall('/api/orders', {
       method: 'POST',
       body:   JSON.stringify({ items: orderItems })
     });

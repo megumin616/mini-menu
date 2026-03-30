@@ -254,7 +254,7 @@
     // ===================================================
     async function loadKitchenOrders() {
       try {
-        const data = await apiCall('/orders/kitchen');
+        const data = await apiCall('/api/orders/kitchen');
         if (!data) return;
         allOrders = data.data || [];
         renderKanban();
@@ -327,7 +327,7 @@
     // ===================================================
     async function updateStatus(itemId, newStatus) {
       try {
-        const data = await apiCall(`/orders/items/${itemId}/status`, {
+        const data = await apiCall(`/api/orders/items/${itemId}/status`, {
           method: 'PATCH',
           body:   JSON.stringify({ status: newStatus })
         });

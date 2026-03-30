@@ -55,7 +55,7 @@ async function handleTableLogin() {
     //   → .catch() ทำงานเมื่อ error (network down, etc.)
     //
     // ใช้ async/await แทน .then() เพื่ออ่านง่ายขึ้น
-    const response = await fetch(`${API_BASE}/auth/table-login`, {
+    const response = await fetch(`${API_BASE}/api/auth/table-login`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' }, // บอก server ว่าส่ง JSON
       body:    JSON.stringify({ tableNumber: parseInt(tableNumber) }) // แปลง JS Object → JSON string

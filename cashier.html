@@ -248,7 +248,7 @@
     // ===================================================
     async function loadTables() {
       try {
-        const data = await apiCall('/orders/tables-overview');
+        const data = await apiCall('/api/orders/tables-overview');
         if (!data) return;
         renderTables(data.data);
         updateStats(data.data);
@@ -328,7 +328,7 @@
 
       // ดึงบิล
       try {
-        const data = await apiCall(`/orders/bill/${tableId}`);
+        const data = await apiCall(`/api/orders/bill/${tableId}`);
         if (!data || !data.data) {
           document.getElementById('emptyBillPanel').style.display = 'block';
           document.getElementById('billPanel').classList.remove('show');
@@ -420,7 +420,7 @@
       if (!confirmed) return;
 
       try {
-        const data = await apiCall(`/orders/close-table/${selectedTableId}`, {
+        const data = await apiCall(`/api/orders/close-table/${selectedTableId}`, {
           method: 'POST',
           body:   JSON.stringify({ paymentMethod: selectedPayMethod })
         });

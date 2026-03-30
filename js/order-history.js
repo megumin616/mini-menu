@@ -33,7 +33,7 @@ async function apiCall(url, options = {}) {
 // ===================================================
 async function loadOrder() {
   try {
-    const data = await apiCall('/orders/my-order');
+    const data = await apiCall('/api/orders/my-order');
     if (!data) return;
 
     document.getElementById('loadingState').style.display = 'none';
@@ -140,7 +140,7 @@ async function openPaymentModal() {
   billBtn.textContent = '⏳ กำลังแจ้งพนักงาน...';
 
   try {
-    const data = await apiCall('/orders/request-bill', {
+    const data = await apiCall('/api/orders/request-bill', {
       method: 'POST',
       body:   JSON.stringify({})
     });
