@@ -151,6 +151,89 @@
       font-weight: 700;
       margin-bottom: 0.8rem;
     }
+
+    /* ── Layout helpers (replacing inline styles) ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+    .cashier-main {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1.2rem;
+      align-items: start;
+    }
+
+    /* ── Bill bottom-sheet backdrop ── */
+    .bill-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 199;
+      backdrop-filter: blur(2px);
+    }
+    .bill-backdrop.show { display: block; }
+
+    /* ── Bill close button (mobile only) ── */
+    .bill-close-btn {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid var(--cream);
+    }
+    .bill-close-btn span { font-weight: 800; font-size: 0.95rem; color: var(--forest); }
+    .bill-close-btn button {
+      background: var(--cream); border: none; border-radius: 50%;
+      width: 32px; height: 32px; cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── RESPONSIVE ── */
+
+    /* Tablet (≤900px): single-column layout, bill panel inline */
+    @media (max-width: 900px) {
+      .cashier-main { grid-template-columns: 1fr; }
+    }
+
+    /* Mobile (≤640px): bill panel as bottom sheet + topbar polish */
+    @media (max-width: 640px) {
+      .topbar {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        align-items: flex-start;
+      }
+      .topbar > div:last-child { width: 100%; gap: 0.3rem; }
+      .topbar > div:last-child button { padding: 0.35rem 0.65rem; font-size: 0.78rem; }
+
+      .content { padding: 0.9rem; }
+      .stats-row { gap: 0.5rem; margin-bottom: 1rem; }
+      .tables-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.6rem; }
+
+      .table-num-big { font-size: 1.6rem; }
+      .status-pill   { font-size: 0.68rem; }
+
+      /* Bill panel → bottom sheet */
+      .bill-panel.show {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        z-index: 200;
+        border-radius: 20px 20px 0 0;
+        max-height: 82dvh;
+        overflow-y: auto;
+        box-shadow: 0 -8px 40px rgba(27,67,50,0.28);
+        animation: billSlideUp 0.28s ease;
+      }
+      @keyframes billSlideUp {
+        from { transform: translateY(100%); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+      }
+      .bill-close-btn { display: flex; }
+    }
   </style>
 </head>
 <body>
@@ -187,7 +270,7 @@
 
   <div class="content">
     <!-- Summary Stats -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:1.5rem" id="statsRow">
+    <div class="stats-row" id="statsRow">
       <div style="background:white;border-radius:14px;padding:1rem;text-align:center;box-shadow:0 2px 10px rgba(27,67,50,0.06)">
         <p class="display-font" style="font-size:2rem;font-weight:700;color:#22C55E" id="stat-available">-</p>
         <p style="font-size:0.78rem;color:#888">โต๊ะว่าง</p>
@@ -202,7 +285,7 @@
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 380px;gap:1.2rem;align-items:start">
+    <div class="cashier-main">
       <!-- LEFT: Tables Grid -->
       <div>
         <p class="section-title">สถานะโต๊ะทั้งหมด</p>
@@ -220,6 +303,8 @@
           <div style="font-size:3rem;margin-bottom:1rem">🧾</div>
           <p style="color:#aaa;font-size:0.9rem">คลิกที่โต๊ะเพื่อดูบิล</p>
         </div>
+        <!-- Bottom-sheet backdrop (mobile) -->
+        <div class="bill-backdrop" id="billBackdrop" onclick="closeBillSheet()"></div>
         <div class="bill-panel" id="billPanel">
           <!-- Bill content injected by JS -->
         </div>
@@ -350,10 +435,19 @@
       document.getElementById('emptyBillPanel').style.display = 'none';
       const panel = document.getElementById('billPanel');
       panel.classList.add('show');
+      // Show backdrop on mobile
+      if (window.innerWidth <= 640) {
+        document.getElementById('billBackdrop').classList.add('show');
+      }
 
       const isBillReq = status === 'BILL_REQUESTED';
 
       panel.innerHTML = `
+        <!-- Close button (mobile bottom-sheet) -->
+        <div class="bill-close-btn">
+          <span>บิลโต๊ะ ${tableNumber}</span>
+          <button onclick="closeBillSheet()" title="ปิด">✕</button>
+        </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
           <h3 class="display-font" style="color:var(--forest)">โต๊ะ ${tableNumber}</h3>
           <span class="status-pill ${isBillReq ? 'pill-bill-requested' : 'pill-occupied'}">
@@ -446,6 +540,17 @@
       } catch (err) {
         showToast('❌ เกิดข้อผิดพลาด', 'error');
       }
+    }
+
+    function closeBillSheet() {
+      document.getElementById('billPanel').classList.remove('show');
+      document.getElementById('billBackdrop').classList.remove('show');
+      document.getElementById('emptyBillPanel').style.display = 'block';
+      document.getElementById('emptyBillPanel').innerHTML = `
+        <div style="font-size:3rem;margin-bottom:1rem">🧾</div>
+        <p style="color:#aaa;font-size:0.9rem">คลิกที่โต๊ะเพื่อดูบิล</p>
+      `;
+      selectedTableId = null;
     }
 
     function showToast(msg, type = '') {

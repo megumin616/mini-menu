@@ -167,6 +167,68 @@
     .col::-webkit-scrollbar { width: 4px; }
     .col::-webkit-scrollbar-track { background: transparent; }
     .col::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 50px; }
+
+    /* ── RESPONSIVE ── */
+
+    /* Tablet (≤900px): compact topbar, columns still 3-col but smaller */
+    @media (max-width: 900px) {
+      .topbar { padding: 0.65rem 1rem; flex-wrap: wrap; gap: 0.4rem; }
+      .topbar > div:first-child { order: 1; flex: 1; }
+      #statsBar { order: 3; width: 100%; gap: 0.3rem; }
+      #statsBar .stat-card { flex: 1; padding: 0.35rem 0.5rem; }
+      #statsBar .stat-number { font-size: 1.15rem; }
+      #statsBar .stat-label  { font-size: 0.62rem; }
+      #kitchenBtns { order: 2; gap: 0.35rem; }
+      #kitchenBtns span { display: none; }
+
+      .columns { height: calc(100svh - 108px); }
+    }
+
+    /* Mobile (≤640px): horizontal-scroll snap kanban, 1 col visible */
+    @media (max-width: 640px) {
+      .topbar { padding: 0.6rem 0.9rem; }
+      #kitchenBtns button { padding: 0.28rem 0.55rem; font-size: 0.75rem; }
+
+      .columns {
+        display: flex;
+        flex-direction: row;
+        height: calc(100svh - 108px);
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+        gap: 0;
+      }
+
+      /* Scroll snap hint: partial peek of next column */
+      .col {
+        flex: 0 0 90vw;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        border-right: 1px solid rgba(255,255,255,0.08);
+        overflow-y: auto;
+        padding: 0.7rem;
+      }
+      .col:last-child { flex: 0 0 90vw; border-right: none; }
+
+      /* Column header sticks while scrolling vertically */
+      .col-header { position: sticky; top: 0; z-index: 5; backdrop-filter: blur(8px); }
+
+      /* Bigger tap targets */
+      .action-btn { padding: 0.55rem 0.6rem; font-size: 0.82rem; }
+      .ticket-header { padding: 0.65rem 0.8rem; }
+      .ticket-item   { padding: 0.5rem  0.8rem; }
+      .ticket-actions { padding: 0.55rem 0.8rem; }
+
+      /* Swipe indicator */
+      .col-header::after {
+        content: '';
+        display: none; /* shown only on first col via JS if needed */
+      }
+    }
+
+    /* Scrollbar for horizontal kanban on mobile */
+    .columns::-webkit-scrollbar { height: 0; }
   </style>
 </head>
 <body>
@@ -179,7 +241,7 @@
     </div>
 
     <!-- Stats -->
-    <div style="display:flex;gap:0.6rem" id="statsBar">
+    <div style="display:flex;gap:0.6rem;align-items:stretch" id="statsBar">
       <div class="stat-card">
         <div class="stat-number" style="color:#FBB924" id="statPending">0</div>
         <div class="stat-label">รอ</div>
@@ -194,7 +256,7 @@
       </div>
     </div>
 
-    <div style="display:flex;gap:0.5rem;align-items:center">
+    <div id="kitchenBtns" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
       <span style="font-size:0.78rem;color:rgba(255,255,255,0.4)">อัปเดต: <span id="lastUpdate">-</span></span>
       <button onclick="loadKitchenOrders()"
         style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:white;border-radius:8px;padding:0.3rem 0.7rem;cursor:pointer;font-size:0.8rem;font-family:'Nunito',sans-serif">
@@ -215,8 +277,13 @@
     </div>
   </div>
 
+  <!-- SWIPE HINT (mobile only) -->
+  <div id="swipeHint" style="display:none;background:rgba(255,255,255,0.06);padding:0.3rem 0.9rem;font-size:0.72rem;color:rgba(255,255,255,0.4);text-align:center">
+    ← เลื่อนซ้าย-ขวาเพื่อดูแต่ละสถานะ →
+  </div>
+
   <!-- 3-COLUMN KANBAN -->
-  <div class="columns">
+  <div class="columns" id="kanban">
     <!-- PENDING -->
     <div class="col" id="colPending">
       <div class="col-header col-pending">⏳ รอดำเนินการ <span id="pendingBadge" style="margin-left:auto;background:rgba(251,191,36,0.3);border-radius:50px;padding:0.1rem 0.5rem">0</span></div>
@@ -387,6 +454,13 @@
       if (localStorage.getItem('staffRole') === 'ADMIN') {
         document.getElementById('btnAddStaff').style.display = 'inline-block';
         document.getElementById('btnAdminMenu').style.display = 'inline-block';
+      }
+      // แสดง swipe hint บนมือถือ
+      if (window.innerWidth <= 640) {
+        document.getElementById('swipeHint').style.display = 'block';
+        setTimeout(() => {
+          document.getElementById('swipeHint').style.display = 'none';
+        }, 4000);
       }
       loadKitchenOrders();
       // Auto-refresh ทุก 15 วินาที

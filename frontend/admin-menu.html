@@ -79,19 +79,65 @@
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
     }
-    @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+    /* .row stacks at 900px – see mobile section below */
     table { width:100%; border-collapse: collapse; }
     th, td { padding: .65rem .5rem; border-bottom: 1px solid var(--cream); font-size: .86rem; }
     th { text-align:left; color:#555; font-size:.78rem; letter-spacing:.02em; text-transform: uppercase; }
     .actions { display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap; }
     .muted { color:#888; font-size:.82rem; }
 
-    /* Mobile polish */
+    /* ── Tablet (≤900px): single-column form + list already via .row ── */
+    @media (max-width: 900px) {
+      .row { grid-template-columns: 1fr; }
+    }
+
+    /* ── Mobile polish (≤640px) ── */
     @media (max-width: 640px) {
-      .content { padding: 0.9rem; }
-      .topbar { padding: 0.8rem 0.9rem; align-items:flex-start; gap: .6rem; flex-wrap: wrap; }
-      .topbar > div:last-child { width:100%; justify-content: space-between; }
-      .tab { flex: 1 1 auto; }
+      .content { padding: 0.75rem; }
+
+      /* Topbar: wrap to 2 rows */
+      .topbar {
+        padding: 0.7rem 0.9rem;
+        align-items: flex-start;
+        gap: .5rem;
+        flex-wrap: wrap;
+      }
+      .topbar > div:first-child { flex: 1; min-width: 0; }
+      .topbar > div:last-child {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: .35rem;
+      }
+      .topbar .btn { padding: .5rem .75rem; font-size: .8rem; }
+
+      /* Tabs: fill full width */
+      .tab { flex: 1 1 auto; text-align: center; padding: .55rem .5rem; }
+
+      /* Form grids: stack on mobile */
+      [style*="grid-template-columns:1fr 120px"],
+      [style*="grid-template-columns: 1fr 120px"] {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+      }
+      [style*="grid-template-columns:1fr 1fr"],
+      [style*="grid-template-columns: 1fr 1fr"] {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+      }
+
+      /* Reduce panel padding */
+      .panel { padding: .9rem; border-radius: 14px; }
+
+      /* List header: stack filter/search */
+      #listMenus > div:first-child > div:last-child {
+        width: 100%;
+        margin-left: 0;
+      }
+      #filterCategory, #searchMenu {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
 
       /* Convert tables to cards */
       table thead { display: none; }
@@ -100,29 +146,49 @@
         background: white;
         border: 1px solid var(--cream);
         border-radius: 14px;
-        margin-bottom: .8rem;
+        margin-bottom: .7rem;
         overflow: hidden;
+        box-shadow: 0 1px 6px rgba(27,67,50,0.06);
       }
       td {
         border-bottom: 1px solid var(--cream);
         display: flex;
         justify-content: space-between;
-        gap: .8rem;
+        gap: .6rem;
         align-items: flex-start;
-        padding: .7rem .75rem;
+        padding: .65rem .8rem;
+        font-size: .88rem;
       }
       td:last-child { border-bottom: none; }
       td::before {
         content: attr(data-label);
-        font-size: .72rem;
+        font-size: .7rem;
         font-weight: 900;
-        color: #777;
-        letter-spacing: .02em;
+        color: #888;
+        letter-spacing: .03em;
         text-transform: uppercase;
-        flex: 0 0 110px;
+        flex: 0 0 90px;
+        padding-top: .1rem;
       }
       td[data-label=""]::before { content: ""; flex: 0 0 0; }
-      .actions { justify-content: flex-start; }
+      td[data-label="Menu"] { flex-direction: column; }
+      td[data-label="Menu"]::before { flex: none; margin-bottom: .2rem; }
+
+      /* Menu item image in card */
+      td[data-label="Menu"] > div { width: 100%; }
+      td[data-label="Menu"] img { width: 52px; height: 52px; }
+
+      /* Actions row */
+      .actions { justify-content: flex-start; flex-wrap: wrap; }
+      .btn { padding: .55rem .85rem; font-size: .85rem; }
+
+      /* Toast left-aligned on mobile */
+      .toast { right: .8rem; left: .8rem; text-align: center; white-space: normal; }
+    }
+
+    /* Very small (≤400px) */
+    @media (max-width: 400px) {
+      .tab { font-size: .78rem; padding: .5rem .4rem; }
     }
   </style>
 </head>
