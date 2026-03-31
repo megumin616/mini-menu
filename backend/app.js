@@ -23,7 +23,7 @@ const app = express();
 // CORS: อนุญาตให้ Frontend (คนละ domain) เรียก API ได้
 // ในระบบ Production ควรกำหนด origin ให้เฉพาะเจาะจง
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
