@@ -4,6 +4,19 @@
 
 const db = require('../config/db');
 
+function parseBoolean(value, defaultValue) {
+  if (value === undefined) return defaultValue;
+  if (value === null) return defaultValue;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'y', 'on'].includes(v)) return true;
+    if (['false', '0', 'no', 'n', 'off'].includes(v)) return false;
+  }
+  return defaultValue;
+}
+
 // ดึงเมนูทั้งหมด พร้อมข้อมูล category
 // ใช้ JOIN เพื่อรวมข้อมูลจาก 2 ตาราง (menu_items + categories)
 async function getAllMenus() {
@@ -17,10 +30,10 @@ async function getAllMenus() {
       m.is_available,
       c.id   AS category_id,
       c.name AS category_name,
-      c.icon AS category_icon
+      c.icon AS category_icon,
+      c.sort_order AS category_sort_order
     FROM menu_items m
     JOIN categories c ON m.category_id = c.id
-    WHERE m.is_available = TRUE
     ORDER BY c.sort_order, m.name
   `);
   return rows;
@@ -31,6 +44,27 @@ async function getAllCategories() {
   const [rows] = await db.query(
     'SELECT * FROM categories ORDER BY sort_order'
   );
+  return rows;
+}
+
+async function getAllMenusAvailableOnly() {
+  const [rows] = await db.query(`
+    SELECT
+      m.id,
+      m.name,
+      m.description,
+      m.price,
+      m.image_url,
+      m.is_available,
+      c.id   AS category_id,
+      c.name AS category_name,
+      c.icon AS category_icon,
+      c.sort_order AS category_sort_order
+    FROM menu_items m
+    JOIN categories c ON m.category_id = c.id
+    WHERE m.is_available = TRUE
+    ORDER BY c.sort_order, m.name
+  `);
   return rows;
 }
 
@@ -124,7 +158,7 @@ async function createMenuItem({ categoryId, name, description, price, imageUrl, 
 
   const desc = description == null ? null : String(description);
   const img  = imageUrl == null || String(imageUrl).trim() === '' ? null : String(imageUrl).trim();
-  const avail = isAvailable == null ? true : Boolean(isAvailable);
+  const avail = parseBoolean(isAvailable, true);
 
   // ตรวจสอบ category มีอยู่จริง
   const [cat] = await db.query('SELECT id FROM categories WHERE id = ?', [cid]);
@@ -164,7 +198,7 @@ async function updateMenuItem(menuItemId, { categoryId, name, description, price
 
   const desc = description === undefined ? current.description : (description == null ? null : String(description));
   const img  = imageUrl === undefined ? current.image_url : (imageUrl == null || String(imageUrl).trim() === '' ? null : String(imageUrl).trim());
-  const avail = isAvailable === undefined ? Boolean(current.is_available) : Boolean(isAvailable);
+  const avail = isAvailable === undefined ? Boolean(current.is_available) : parseBoolean(isAvailable, Boolean(current.is_available));
 
   const [cat] = await db.query('SELECT id FROM categories WHERE id = ?', [cid]);
   if (cat.length === 0) throw new Error('ไม่พบหมวดหมู่ที่เลือก');
@@ -194,6 +228,7 @@ async function deleteMenuItem(menuItemId) {
 
 module.exports = {
   getAllMenus,
+  getAllMenusAvailableOnly,
   getAllCategories,
   createCategory,
   updateCategory,

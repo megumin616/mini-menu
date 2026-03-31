@@ -7,7 +7,10 @@ const menuService = require('../services/menuService');
 // GET /api/menus - ดึงเมนูทั้งหมด
 const getAllMenus = async (req, res) => {
   try {
-    const menus = await menuService.getAllMenus();
+    const isAdmin = req.user?.role === 'ADMIN';
+    const menus = isAdmin
+      ? await menuService.getAllMenus()
+      : await menuService.getAllMenusAvailableOnly();
     res.json({ success: true, data: menus, message: 'ดึงข้อมูลเมนูสำเร็จ' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

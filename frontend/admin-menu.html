@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>จัดการเมนู (Admin) | Cafe' In The Garden</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --forest:#1B4332; --sage:#52796F; --cream:#F8F4EF; --beige:#EDE8E0; --terracotta:#BC6C25; --gold:#D4A017; }
+    * { font-family:'Nunito',sans-serif; box-sizing:border-box; margin:0; padding:0; }
+    body { background: var(--cream); min-height: 100vh; }
+    .display-font { font-family:'Playfair Display',serif; }
+    .topbar {
+      background: linear-gradient(135deg, var(--forest) 0%, var(--sage) 100%);
+      padding: 0.9rem 1.2rem;
+      display:flex;align-items:center;justify-content:space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .content { padding: 1.2rem; max-width: 1200px; margin: 0 auto; }
+    .tab {
+      border: 2px solid var(--beige);
+      background: white;
+      border-radius: 12px;
+      padding: 0.6rem 0.9rem;
+      font-weight: 800;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .tab.active { border-color: var(--forest); background: var(--forest); color: white; }
+    .panel { background:white; border-radius: 18px; padding: 1.1rem; box-shadow: 0 4px 18px rgba(27,67,50,0.08); }
+    .input, .select, .textarea {
+      width:100%;
+      border:2px solid var(--beige);
+      border-radius: 12px;
+      padding: 0.7rem 0.9rem;
+      outline:none;
+      font-size: 0.9rem;
+      background:white;
+    }
+    .textarea { min-height: 90px; resize: vertical; }
+    .input:focus, .select:focus, .textarea:focus { border-color: var(--sage); }
+    .btn {
+      border:none; border-radius: 12px;
+      padding: 0.75rem 1rem;
+      font-weight: 800;
+      cursor:pointer;
+      transition: all .2s;
+      font-size: 0.9rem;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--forest), var(--sage)); color:white; }
+    .btn-danger  { background: rgba(239,68,68,0.12); color:#DC2626; border:2px solid rgba(239,68,68,0.25); }
+    .btn-ghost   { background: white; color:#555; border:2px solid var(--beige); }
+    .btn:disabled { opacity: .6; cursor: not-allowed; }
+    .chip { display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .6rem;border-radius:999px;font-size:.75rem;font-weight:800; }
+    .chip-on  { background: rgba(34,197,94,0.12); color:#059669; border:1px solid rgba(34,197,94,0.25); }
+    .chip-off { background: rgba(107,114,128,0.12); color:#6B7280; border:1px solid rgba(107,114,128,0.25); }
+    .toast {
+      position:fixed; bottom: 1.8rem; right: 1.2rem;
+      background: var(--forest); color:white;
+      padding: 0.8rem 1.1rem;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transform: translateY(90px);
+      transition: transform .25s ease;
+      z-index: 999;
+      box-shadow: 0 8px 24px rgba(27,67,50,0.28);
+      max-width: 92vw;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .toast.show { transform: translateY(0); }
+    .toast.error { background: #c0392b; }
+    .row {
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding: .65rem .5rem; border-bottom: 1px solid var(--cream); font-size: .86rem; }
+    th { text-align:left; color:#555; font-size:.78rem; letter-spacing:.02em; text-transform: uppercase; }
+    .actions { display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap; }
+    .muted { color:#888; font-size:.82rem; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <div class="display-font" style="color:white;font-size:1.1rem;font-weight:700">🌿 Admin Menu</div>
+      <div style="color:rgba(255,255,255,0.7);font-size:0.78rem" id="whoami">-</div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="refreshAll()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);color:white">🔄 รีเฟรช</button>
+      <button class="btn btn-ghost" onclick="goBack()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);color:white">← กลับ</button>
+      <button class="btn btn-ghost" onclick="logout()" style="background:rgba(255,80,80,0.22);border:1px solid rgba(255,80,80,0.3);color:#FCA5A5">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem">
+      <button class="tab active" id="tabCategories" onclick="setTab('categories')">🏷️ Categories</button>
+      <button class="tab" id="tabMenus" onclick="setTab('menus')">🍽️ Menu items</button>
+      <span class="muted" id="apiHint" style="margin-left:auto"></span>
+    </div>
+
+    <div class="row">
+      <div class="panel" id="panelForm">
+        <div id="formCategories">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem">
+            <div>
+              <div style="font-weight:900;color:var(--forest)">เพิ่ม/แก้ไขหมวดหมู่</div>
+              <div class="muted">สร้าง/แก้ไข/ลบได้เฉพาะ ADMIN</div>
+            </div>
+            <button class="btn btn-ghost" onclick="resetCategoryForm()">ล้างฟอร์ม</button>
+          </div>
+
+          <input type="hidden" id="catId"/>
+
+          <div style="display:grid;grid-template-columns:1fr 120px;gap:.6rem;margin-bottom:.6rem">
+            <div>
+              <div class="muted" style="margin-bottom:.35rem;font-weight:800">ชื่อหมวดหมู่</div>
+              <input class="input" id="catName" placeholder="เช่น อาหารคาว"/>
+            </div>
+            <div>
+              <div class="muted" style="margin-bottom:.35rem;font-weight:800">ไอคอน</div>
+              <input class="input" id="catIcon" placeholder="🍽️"/>
+            </div>
+          </div>
+
+          <div style="margin-bottom:1rem">
+            <div class="muted" style="margin-bottom:.35rem;font-weight:800">ลำดับ (sort order)</div>
+            <input class="input" id="catSort" type="number" placeholder="0"/>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-primary" id="catSaveBtn" onclick="saveCategory()">บันทึกหมวดหมู่</button>
+          </div>
+        </div>
+
+        <div id="formMenus" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem">
+            <div>
+              <div style="font-weight:900;color:var(--forest)">เพิ่ม/แก้ไขเมนู</div>
+              <div class="muted">แสดงรายการเมนูทั้งหมด (รวมปิดขาย) สำหรับ ADMIN</div>
+            </div>
+            <button class="btn btn-ghost" onclick="resetMenuForm()">ล้างฟอร์ม</button>
+          </div>
+
+          <input type="hidden" id="menuId"/>
+
+          <div style="margin-bottom:.6rem">
+            <div class="muted" style="margin-bottom:.35rem;font-weight:800">หมวดหมู่</div>
+            <select class="select" id="menuCategory"></select>
+          </div>
+
+          <div style="margin-bottom:.6rem">
+            <div class="muted" style="margin-bottom:.35rem;font-weight:800">ชื่อเมนู</div>
+            <input class="input" id="menuName" placeholder="เช่น Espresso"/>
+          </div>
+
+          <div style="margin-bottom:.6rem">
+            <div class="muted" style="margin-bottom:.35rem;font-weight:800">รายละเอียด</div>
+            <textarea class="textarea" id="menuDesc" placeholder="รายละเอียดเมนู (ถ้ามี)"></textarea>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
+            <div>
+              <div class="muted" style="margin-bottom:.35rem;font-weight:800">ราคา</div>
+              <input class="input" id="menuPrice" type="number" step="0.01" placeholder="0.00"/>
+            </div>
+            <div>
+              <div class="muted" style="margin-bottom:.35rem;font-weight:800">สถานะขาย</div>
+              <select class="select" id="menuAvail">
+                <option value="true">เปิดขาย</option>
+                <option value="false">ปิดขาย</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom:1rem">
+            <div class="muted" style="margin-bottom:.35rem;font-weight:800">รูปภาพ URL</div>
+            <input class="input" id="menuImg" placeholder="https://..."/>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-primary" id="menuSaveBtn" onclick="saveMenu()">บันทึกเมนู</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="panelList">
+        <div id="listCategories">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">
+            <div style="font-weight:900;color:var(--forest)">รายการหมวดหมู่</div>
+            <div class="muted" id="catCount">-</div>
+          </div>
+          <div style="overflow:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Icon</th>
+                  <th>Name</th>
+                  <th>Sort</th>
+                  <th style="text-align:right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="catTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="listMenus" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:.6rem;flex-wrap:wrap">
+            <div style="font-weight:900;color:var(--forest)">รายการเมนู</div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-left:auto">
+              <select class="select" id="filterCategory" style="max-width:260px" onchange="renderMenus()"></select>
+              <input class="input" id="searchMenu" placeholder="ค้นหา..." style="max-width:240px" oninput="renderMenus()"/>
+              <div class="muted" id="menuCount">-</div>
+            </div>
+          </div>
+          <div style="overflow:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Menu</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th style="text-align:right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="menuTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="js/admin-menu.js"></script>
+</body>
+</html>
+

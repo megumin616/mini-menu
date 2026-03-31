@@ -166,6 +166,10 @@
         style="display:none;background:rgba(212,160,23,0.25);border:1px solid rgba(212,160,23,0.45);color:#FDE68A;border-radius:8px;padding:0.4rem 0.8rem;cursor:pointer;font-size:0.85rem;font-family:'Nunito',sans-serif">
         ➕ เพิ่มพนักงาน
       </button>
+      <button type="button" id="btnAdminMenu" onclick="location.href='admin-menu.html'"
+        style="display:none;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.22);color:white;border-radius:8px;padding:0.4rem 0.8rem;cursor:pointer;font-size:0.85rem;font-family:'Nunito',sans-serif">
+        🧾 จัดการเมนู
+      </button>
       <button onclick="loadTables()"
         style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:8px;padding:0.4rem 0.8rem;cursor:pointer;font-size:0.85rem;font-family:'Nunito',sans-serif">
         🔄 รีเฟรช
@@ -464,6 +468,7 @@
       if (name) document.getElementById('staffNameDisplay').textContent = `สวัสดี, ${name}`;
       if (localStorage.getItem('staffRole') === 'ADMIN') {
         document.getElementById('btnAddStaff').style.display = 'inline-block';
+        document.getElementById('btnAdminMenu').style.display = 'inline-block';
       }
       loadTables();
       autoRefresh = setInterval(loadTables, 20000);
