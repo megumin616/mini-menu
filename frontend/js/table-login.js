@@ -9,7 +9,7 @@
 // 4. Frontend รับ Token → เก็บใน localStorage
 // 5. Redirect ไปหน้า menu.html
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'https://cafe-in-the-garden.onrender.com/api';
 
 // ===================================================
 // สร้างปุ่มเลขโต๊ะ 1-10

@@ -36,7 +36,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static Files: เสิร์ฟไฟล์ Frontend จาก folder /frontend
-// ทำให้เข้าถึง http://localhost:3000/index.html ได้โดยตรง
+// ทำให้เข้าถึง https://cafe-in-the-garden.onrender.com/index.html ได้โดยตรง
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // ===================================================

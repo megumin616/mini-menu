@@ -8,7 +8,7 @@
 // 3. จัดการ Cart (เพิ่ม/ลด/ลบ รายการ)
 // 4. ส่งออเดอร์ไปครัวผ่าน API
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'https://cafe-in-the-garden.onrender.com/api';
 
 // ===================================================
 // STATE: ข้อมูลที่หน้านี้ใช้งาน
