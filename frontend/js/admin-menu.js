@@ -145,10 +145,10 @@ function renderCategories() {
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     .map(c => `
       <tr>
-        <td style="font-size:1.1rem">${c.icon || '🍽️'}</td>
-        <td style="font-weight:800;color:#2C2C2C">${escapeHtml(c.name)}</td>
-        <td>${c.sort_order ?? 0}</td>
-        <td>
+        <td data-label="Icon" style="font-size:1.1rem">${c.icon || '🍽️'}</td>
+        <td data-label="Name" style="font-weight:800;color:#2C2C2C">${escapeHtml(c.name)}</td>
+        <td data-label="Sort">${c.sort_order ?? 0}</td>
+        <td data-label="">
           <div class="actions">
             <button class="btn btn-ghost" onclick="editCategory(${c.id})">แก้ไข</button>
             <button class="btn btn-danger" onclick="deleteCategory(${c.id})">ลบ</button>
@@ -252,7 +252,7 @@ function renderMenus() {
     })
     .map(m => `
       <tr>
-        <td>
+        <td data-label="Menu">
           <div style="display:flex;align-items:center;gap:.6rem">
             <img src="${m.image_url || ''}" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--beige)"
                  onerror="this.style.display='none'"/>
@@ -262,12 +262,12 @@ function renderMenus() {
             </div>
           </div>
         </td>
-        <td>${escapeHtml(m.category_icon || '🍽️')} ${escapeHtml(m.category_name || '')}</td>
-        <td style="font-weight:900;color:var(--terracotta)">฿${Number(m.price || 0).toLocaleString()}</td>
-        <td>
+        <td data-label="Category">${escapeHtml(m.category_icon || '🍽️')} ${escapeHtml(m.category_name || '')}</td>
+        <td data-label="Price" style="font-weight:900;color:var(--terracotta)">฿${Number(m.price || 0).toLocaleString()}</td>
+        <td data-label="Status">
           ${m.is_available ? `<span class="chip chip-on">🟢 เปิดขาย</span>` : `<span class="chip chip-off">⚪ ปิดขาย</span>`}
         </td>
-        <td>
+        <td data-label="">
           <div class="actions">
             <button class="btn btn-ghost" onclick="editMenu(${m.id})">แก้ไข</button>
             <button class="btn btn-danger" onclick="deleteMenu(${m.id})">ลบ</button>
