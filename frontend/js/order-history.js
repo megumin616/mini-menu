@@ -10,6 +10,14 @@ function getToken() {
   return localStorage.getItem('token');
 }
 
+function orderErrLine(data, contextKey) {
+  if (typeof humanizeApiError !== 'function') {
+    return (data && data.message) || 'ลองอีกครั้ง';
+  }
+  const k = (data && data._network) ? 'network' : (contextKey || 'generic');
+  return humanizeApiError(data && data.message, k);
+}
+
 async function apiCall(url, options = {}) {
   const token = getToken();
   let response;
@@ -23,7 +31,7 @@ async function apiCall(url, options = {}) {
       }
     });
   } catch {
-    return { success: false, message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' };
+    return { success: false, message: null, _network: true };
   }
   if (response.status === 401) {
     localStorage.clear();
@@ -34,12 +42,12 @@ async function apiCall(url, options = {}) {
   if (!text) {
     return response.ok
       ? { success: true, data: null, message: '' }
-      : { success: false, message: response.statusText || 'ไม่มีข้อมูลจากเซิร์ฟเวอร์' };
+      : { success: false, message: null };
   }
   try {
     return JSON.parse(text);
   } catch {
-    return { success: false, message: 'รูปแบบคำตอบจากเซิร์ฟเวอร์ไม่ถูกต้อง' };
+    return { success: false, message: null };
   }
 }
 
@@ -58,20 +66,23 @@ async function loadOrder() {
     if (!data) return;
 
     if (data.success === false) {
+      const line = orderErrLine(data, 'loadOrder');
       if (!stillOnLoading()) {
-        showToast(`❌ ${data.message || 'โหลดออเดอร์ไม่สำเร็จ'}`, 'error');
+        showToast(line, 'error');
         return;
       }
       document.getElementById('emptyState').style.display = 'none';
       document.getElementById('orderContent').style.display = 'none';
       loadingState.style.display = 'block';
+      const safe = String(line)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
       loadingState.innerHTML =
         '<div style="text-align:center;padding:0.5rem 0.25rem 0.25rem">' +
         '<div style="font-size:1.5rem">⚠️</div>' +
-        '<p style="color:#A93226;font-size:0.9rem;font-weight:700;margin:0.6rem 0 0.2rem">โหลดออเดอร์ไม่สำเร็จ</p>' +
-        '<p style="color:#5c6168;font-size:0.86rem;margin-bottom:1rem;white-space:pre-wrap">' +
-        (data.message || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ หรือเกิดข้อผิดพลาด') +
-        '</p>' +
+        '<p style="color:#A93226;font-size:0.9rem;font-weight:700;margin:0.6rem 0 0.2rem">ดูออเดอร์ไม่ได้</p>' +
+        '<p style="color:#5c6168;font-size:0.86rem;margin-bottom:1rem;white-space:pre-wrap">' + safe + '</p>' +
         '<button type="button" onclick="location.reload()" ' +
         'style="background:var(--forest);color:white;border:none;border-radius:12px;padding:0.55rem 1.1rem;cursor:pointer;font-size:0.9rem">' +
         '↻ ลองอีกครั้ง' +
@@ -92,10 +103,11 @@ async function loadOrder() {
   } catch (err) {
     console.error('Load order error:', err);
     if (!stillOnLoading()) {
-      showToast('❌ โหลดออเดอร์ไม่สำเร็จ', 'error');
+      showToast(typeof humanizeApiError === 'function' ? humanizeApiError(null, 'loadOrder') : 'โหลดออเดอร์ไม่สำเร็จ', 'error');
     } else {
+      const line = typeof humanizeApiError === 'function' ? humanizeApiError(null, 'loadOrder') : 'อินเทอร์เน็ตขัดข้อง ลองอีกครั้ง';
       loadingState.innerHTML =
-        '<p style="color:#c0392b">❌ โหลดออเดอร์ไม่สำเร็จ กรุณาลองอีกครั้ง</p>';
+        '<p style="color:#c0392b">' + line + '</p>';
     }
   }
 }
@@ -200,7 +212,7 @@ async function openPaymentModal() {
     }
 
     if (!data.success) {
-      showToast(`❌ ${data.message}`, 'error');
+      showToast(orderErrLine(data, 'requestBill'), 'error');
       billBtn.disabled = false;
       billBtn.textContent = prevLabel;
       return;
@@ -223,7 +235,7 @@ async function openPaymentModal() {
     confirmBtn.textContent   = 'รับทราบ / ปิด';
   } catch (err) {
     console.error('request-bill:', err);
-    showToast('❌ เกิดข้อผิดพลาด', 'error');
+    showToast(typeof humanizeApiError === 'function' ? humanizeApiError(null, 'requestBill') : 'ยังส่งคำร้องไม่สำเร็จ ลองอีกครั้ง', 'error');
   }
 
   billBtn.disabled    = false;

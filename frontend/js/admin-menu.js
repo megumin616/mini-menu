@@ -19,16 +19,19 @@ function showToast(msg, type = '') {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-function showErrorDialog(title, message) {
+/** ข้อความเดียว = เหตุผล (ไทย) | สอง argument = หัวข้อ สั้น ๆ + เหตุผล */
+function showErrorDialog(message, title) {
+  const head = (title && String(title).trim()) || 'กระทำไม่สำเร็จ';
+  const body = (message && String(message).trim()) || (typeof humanizeApiError === 'function'
+    ? humanizeApiError(null, 'generic')
+    : 'กรุณาลองอีกครั้ง');
   const root = document.getElementById('errorDialog');
   if (!root) {
-    showToast(message || title, 'error');
+    showToast(body, 'error');
     return;
   }
-  document.getElementById('errorDialogTitle').textContent = title;
-  document.getElementById('errorDialogMsg').textContent = message && String(message).trim()
-    ? String(message).trim()
-    : 'กรุณาลองอีกครั้ง หรือรีเฟรชหน้านี้';
+  document.getElementById('errorDialogTitle').textContent = head;
+  document.getElementById('errorDialogMsg').textContent = body;
   root.classList.add('is-open');
   root.setAttribute('aria-hidden', 'false');
   setTimeout(() => {
@@ -44,9 +47,12 @@ function closeErrorDialog() {
   root.setAttribute('aria-hidden', 'true');
 }
 
-function userFacingMessage(data, fallback = 'กรุณาลองอีกครั้ง') {
-  if (!data || !data.message) return fallback;
-  return String(data.message).trim() || fallback;
+function userFacingMessage(data, contextKey) {
+  if (typeof humanizeApiError !== 'function') {
+    return (data && data.message) ? String(data.message) : 'กรุณาลองอีกครั้ง';
+  }
+  const k = (data && data._network) ? 'network' : (contextKey || 'generic');
+  return humanizeApiError(data && data.message, k);
 }
 
 function logout() {
@@ -80,7 +86,7 @@ async function apiCall(path, options = {}) {
   } catch {
     return {
       res: null,
-      data: { success: false, message: 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต หรือลองอีกครั้งภายหลัง' }
+      data: { success: false, message: null, _network: true }
     };
   }
 
@@ -95,15 +101,15 @@ async function apiCall(path, options = {}) {
     try {
       data = JSON.parse(text);
     } catch {
-      data = { success: false, message: 'รูปแบบคำตอบจากเซิร์ฟเวอร์ไม่ถูกต้อง' };
+      data = { success: false, message: null };
     }
   } else {
     data = res.ok
       ? { success: true, message: '' }
-      : { success: false, message: res.statusText || `เกิดข้อผิดพลาด (${res.status})` };
+      : { success: false, message: res.statusText || null };
   }
   if (data && !('success' in data) && !res.ok) {
-    data = { success: false, message: (data && data.message) || res.statusText || `HTTP ${res.status}` };
+    data = { success: false, message: (data && data.message) || null };
   }
   return { res, data };
 }
@@ -181,7 +187,7 @@ async function loadCategories() {
   const out = await apiCall('/menus/categories', { method: 'GET' });
   if (!out) return;
   if (!out.data.success) {
-    showToast(userFacingMessage(out.data, 'โหลดหมวดหมู่ไม่สำเร็จ'), 'error');
+    showToast(userFacingMessage(out.data, 'load'), 'error');
     return;
   }
   categories = out.data.data || [];
@@ -243,7 +249,7 @@ async function saveCategory() {
 
   if (!out) return;
   if (!out.data.success) {
-    showErrorDialog('บันทึกหมวดหมู่ไม่สำเร็จ', userFacingMessage(out.data));
+    showErrorDialog(userFacingMessage(out.data, 'saveCategory'));
     return;
   }
   showToast('✅ บันทึกหมวดหมู่แล้ว');
@@ -260,7 +266,7 @@ async function deleteCategory(id) {
   const out = await apiCall(`/menus/categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (!out) return;
   if (!out.data.success) {
-    showErrorDialog('ลบหมวดหมู่ไม่สำเร็จ', userFacingMessage(out.data));
+    showErrorDialog(userFacingMessage(out.data, 'deleteCategory'));
     return;
   }
   showToast('✅ ลบหมวดหมู่แล้ว');
@@ -273,7 +279,7 @@ async function loadMenus() {
   const out = await apiCall('/menus', { method: 'GET' });
   if (!out) return;
   if (!out.data.success) {
-    showToast(userFacingMessage(out.data, 'โหลดเมนูไม่สำเร็จ'), 'error');
+    showToast(userFacingMessage(out.data, 'load'), 'error');
     return;
   }
   menus = out.data.data || [];
@@ -376,7 +382,7 @@ async function saveMenu() {
 
   if (!out) return;
   if (!out.data.success) {
-    showErrorDialog('บันทึกเมนูไม่สำเร็จ', userFacingMessage(out.data));
+    showErrorDialog(userFacingMessage(out.data, 'saveMenu'));
     return;
   }
   showToast('✅ บันทึกเมนูแล้ว');
@@ -392,7 +398,7 @@ async function deleteMenu(id) {
   const out = await apiCall(`/menus/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (!out) return;
   if (!out.data.success) {
-    showErrorDialog('ลบเมนูไม่สำเร็จ', userFacingMessage(out.data));
+    showErrorDialog(userFacingMessage(out.data, 'deleteMenu'));
     return;
   }
   showToast('✅ ลบเมนูแล้ว');

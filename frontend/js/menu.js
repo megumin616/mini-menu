@@ -45,7 +45,7 @@ async function apiCall(url, options = {}) {
       headers: { ...defaultHeaders, ...options.headers }
     });
   } catch {
-    return { success: false, message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' };
+    return { success: false, message: null, _network: true };
   }
 
   // ถ้า Token หมดอายุหรือไม่ถูกต้อง → กลับหน้าแรก
@@ -61,10 +61,10 @@ async function apiCall(url, options = {}) {
   try {
     data = text ? JSON.parse(text) : null;
   } catch {
-    return { success: false, message: 'รูปแบบคำตอบจากเซิร์ฟเวอร์ไม่ถูกต้อง' };
+    return { success: false, message: null };
   }
   if (data == null) {
-    return { success: false, message: 'ไม่ได้รับข้อมูลจากเซิร์ฟเวอร์' };
+    return { success: false, message: null };
   }
   return data;
 }
@@ -84,11 +84,17 @@ async function loadMenus() {
     if (!menuRes || !catRes) return;
 
     if (!menuRes.success) {
-      showToast(`❌ ${menuRes.message || 'โหลดเมนูไม่สำเร็จ'}`, 'error');
+      const t = (typeof humanizeApiError === 'function')
+        ? humanizeApiError(menuRes.message, menuRes._network ? 'network' : 'load')
+        : (menuRes.message || 'โหลดรายการอาหารไม่สำเร็จ');
+      showToast(t, 'error');
       return;
     }
     if (!catRes.success) {
-      showToast(`❌ ${catRes.message || 'โหลดหมวดหมู่ไม่สำเร็จ'}`, 'error');
+      const t = (typeof humanizeApiError === 'function')
+        ? humanizeApiError(catRes.message, catRes._network ? 'network' : 'load')
+        : (catRes.message || 'โหลดหมวดหมู่ไม่สำเร็จ');
+      showToast(t, 'error');
       return;
     }
 
@@ -388,12 +394,15 @@ async function confirmOrder() {
         }
       }, 800);
     } else {
-      showToast(`❌ ${data?.message || 'เกิดข้อผิดพลาด'}`, 'error');
+      const t = (typeof humanizeApiError === 'function')
+        ? humanizeApiError(data?.message, 'confirmOrder')
+        : (data?.message || 'ส่งออเดอร์ไม่สำเร็จ');
+      showToast(t, 'error');
       btn.disabled    = false;
       btn.textContent = '🍳 ยืนยันสั่งอาหาร';
     }
   } catch (err) {
-    showToast('❌ ไม่สามารถส่งออเดอร์ได้', 'error');
+    showToast((typeof humanizeApiError === 'function' ? humanizeApiError(null, 'confirmOrder') : 'ส่งออเดอร์ไม่สำเร็จ'), 'error');
     btn.disabled    = false;
     btn.textContent = '🍳 ยืนยันสั่งอาหาร';
   }

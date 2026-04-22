@@ -61,10 +61,11 @@ async function handleTableLogin() {
       body:    JSON.stringify({ tableNumber: parseInt(tableNumber) }) // แปลง JS Object → JSON string
     });
 
-    // response.json() แปลง JSON string จาก server → JS Object
-    const data = await response.json();
+    const text   = await response.text();
+    let   data   = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = { success: false, message: null }; }
 
-    if (data.success) {
+    if (data && data.success) {
       // ✅ บันทึก Token ลง localStorage
       // localStorage เก็บข้อมูลถาวรแม้ปิด browser
       // แต่ถูก clear เมื่อ clear browser data
@@ -79,13 +80,17 @@ async function handleTableLogin() {
         window.location.href = 'menu.html';
       }, 1000);
     } else {
-      showToast(`❌ ${data.message}`, 'error');
+      const t = (typeof humanizeApiError === 'function')
+        ? humanizeApiError((data && data.message) || null, 'tableLogin')
+        : ((data && data.message) || 'เข้าโต๊ะไม่สำเร็จ');
+      showToast(t, 'error');
       setLoading(false);
     }
   } catch (err) {
     // Network error: Server ปิดอยู่ หรือ URL ผิด
     console.error('API Error:', err);
-    showToast('❌ ไม่สามารถเชื่อมต่อ Server ได้', 'error');
+    const t = (typeof humanizeApiError === 'function') ? humanizeApiError(null, 'network') : 'อินเทอร์เน็ตขัดข้อง ลองอีกครั้ง';
+    showToast(t, 'error');
     setLoading(false);
   }
 }

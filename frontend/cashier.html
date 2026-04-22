@@ -314,6 +314,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="js/friendly-error.js"></script>
   <script>
     const API_BASE = 'https://cafe-in-the-garden.onrender.com/api';
     let selectedTableId = null;
@@ -535,10 +536,13 @@
           `;
           loadTables();
         } else {
-          showToast(`❌ ${data?.message}`, 'error');
+          const t = (typeof humanizeApiError === 'function')
+            ? humanizeApiError(data && data.message, 'clearTable')
+            : (data && data.message) || 'รับเงินไม่สำเร็จ';
+          showToast(t, 'error');
         }
       } catch (err) {
-        showToast('❌ เกิดข้อผิดพลาด', 'error');
+        showToast((typeof humanizeApiError === 'function' ? humanizeApiError(null, 'clearTable') : 'รับเงินไม่สำเร็จ ลองอีกครั้ง'), 'error');
       }
     }
 

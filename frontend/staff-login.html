@@ -150,6 +150,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="js/friendly-error.js"></script>
   <script>
     const API_BASE     = 'https://cafe-in-the-garden.onrender.com/api';
     let selectedRole   = 'kitchen';
@@ -174,7 +175,7 @@
       errDiv.style.display = 'none';
 
       if (!username || !password) {
-        errDiv.textContent   = 'กรุณากรอก Username และ Password';
+        errDiv.textContent   = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';
         errDiv.style.display = 'block';
         return;
       }
@@ -189,9 +190,11 @@
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ username, password })
         });
-        const data = await response.json();
+        const raw = await response.text();
+        let data   = null;
+        try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
 
-        if (data.success) {
+        if (data && data.success) {
           // บันทึก Token สำหรับพนักงาน
           localStorage.setItem('staffToken', data.data.token);
           localStorage.setItem('staffName',  data.data.user.fullName);
@@ -204,13 +207,16 @@
             window.location.href = selectedRole === 'kitchen' ? 'kitchen.html' : 'cashier.html';
           }, 800);
         } else {
-          errDiv.textContent   = `❌ ${data.message}`;
+          const t = (typeof humanizeApiError === 'function')
+            ? humanizeApiError((data && data.message) || null, 'staffAuth')
+            : ((data && data.message) || 'เข้าสู่ระบบไม่สำเร็จ');
+          errDiv.textContent   = t;
           errDiv.style.display = 'block';
           btn.disabled         = false;
           btn.textContent      = 'เข้าสู่ระบบ →';
         }
       } catch (err) {
-        errDiv.textContent   = '❌ ไม่สามารถเชื่อมต่อ Server ได้';
+        errDiv.textContent   = (typeof humanizeApiError === 'function' ? humanizeApiError(null, 'network') : 'อินเทอร์เน็ตขัดข้อง ลองอีกครั้ง');
         errDiv.style.display = 'block';
         btn.disabled         = false;
         btn.textContent      = 'เข้าสู่ระบบ →';
