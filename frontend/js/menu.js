@@ -38,12 +38,15 @@ async function apiCall(url, options = {}) {
     'Authorization': `Bearer ${token}` // แนบ Token ทุกครั้ง
   };
 
-  const response = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers: { ...defaultHeaders, ...options.headers }
-  });
-
-  const data = await response.json();
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${url}`, {
+      ...options,
+      headers: { ...defaultHeaders, ...options.headers }
+    });
+  } catch {
+    return { success: false, message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' };
+  }
 
   // ถ้า Token หมดอายุหรือไม่ถูกต้อง → กลับหน้าแรก
   if (response.status === 401) {
@@ -53,6 +56,16 @@ async function apiCall(url, options = {}) {
     return null;
   }
 
+  const text = await response.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    return { success: false, message: 'รูปแบบคำตอบจากเซิร์ฟเวอร์ไม่ถูกต้อง' };
+  }
+  if (data == null) {
+    return { success: false, message: 'ไม่ได้รับข้อมูลจากเซิร์ฟเวอร์' };
+  }
   return data;
 }
 
@@ -69,6 +82,15 @@ async function loadMenus() {
     ]);
 
     if (!menuRes || !catRes) return;
+
+    if (!menuRes.success) {
+      showToast(`❌ ${menuRes.message || 'โหลดเมนูไม่สำเร็จ'}`, 'error');
+      return;
+    }
+    if (!catRes.success) {
+      showToast(`❌ ${catRes.message || 'โหลดหมวดหมู่ไม่สำเร็จ'}`, 'error');
+      return;
+    }
 
     allMenus      = menuRes.data;
     allCategories = catRes.data;

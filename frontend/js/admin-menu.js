@@ -19,6 +19,36 @@ function showToast(msg, type = '') {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+function showErrorDialog(title, message) {
+  const root = document.getElementById('errorDialog');
+  if (!root) {
+    showToast(message || title, 'error');
+    return;
+  }
+  document.getElementById('errorDialogTitle').textContent = title;
+  document.getElementById('errorDialogMsg').textContent = message && String(message).trim()
+    ? String(message).trim()
+    : 'กรุณาลองอีกครั้ง หรือรีเฟรชหน้านี้';
+  root.classList.add('is-open');
+  root.setAttribute('aria-hidden', 'false');
+  setTimeout(() => {
+    const btn = document.getElementById('errorDialogOk');
+    if (btn) btn.focus();
+  }, 50);
+}
+
+function closeErrorDialog() {
+  const root = document.getElementById('errorDialog');
+  if (!root) return;
+  root.classList.remove('is-open');
+  root.setAttribute('aria-hidden', 'true');
+}
+
+function userFacingMessage(data, fallback = 'กรุณาลองอีกครั้ง') {
+  if (!data || !data.message) return fallback;
+  return String(data.message).trim() || fallback;
+}
+
 function logout() {
   localStorage.removeItem('staffToken');
   localStorage.removeItem('staffName');
@@ -37,21 +67,44 @@ function goBack() {
 
 async function apiCall(path, options = {}) {
   const token = getToken();
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...options.headers
-    }
-  });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers
+      }
+    });
+  } catch {
+    return {
+      res: null,
+      data: { success: false, message: 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ต หรือลองอีกครั้งภายหลัง' }
+    };
+  }
 
   if (res.status === 401) {
     logout();
     return null;
   }
 
-  const data = await res.json().catch(() => null);
+  const text = await res.text();
+  let data;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { success: false, message: 'รูปแบบคำตอบจากเซิร์ฟเวอร์ไม่ถูกต้อง' };
+    }
+  } else {
+    data = res.ok
+      ? { success: true, message: '' }
+      : { success: false, message: res.statusText || `เกิดข้อผิดพลาด (${res.status})` };
+  }
+  if (data && !('success' in data) && !res.ok) {
+    data = { success: false, message: (data && data.message) || res.statusText || `HTTP ${res.status}` };
+  }
   return { res, data };
 }
 
@@ -126,9 +179,9 @@ function fillCategorySelects() {
 
 async function loadCategories() {
   const out = await apiCall('/menus/categories', { method: 'GET' });
-  if (!out || !out.data) return;
+  if (!out) return;
   if (!out.data.success) {
-    showToast(out.data.message || 'โหลดหมวดหมู่ไม่สำเร็จ', 'error');
+    showToast(userFacingMessage(out.data, 'โหลดหมวดหมู่ไม่สำเร็จ'), 'error');
     return;
   }
   categories = out.data.data || [];
@@ -188,9 +241,9 @@ async function saveCategory() {
   btn.disabled = false;
   btn.textContent = 'บันทึกหมวดหมู่';
 
-  if (!out || !out.data) return;
+  if (!out) return;
   if (!out.data.success) {
-    showToast(out.data.message || 'บันทึกไม่สำเร็จ', 'error');
+    showErrorDialog('บันทึกหมวดหมู่ไม่สำเร็จ', userFacingMessage(out.data));
     return;
   }
   showToast('✅ บันทึกหมวดหมู่แล้ว');
@@ -205,9 +258,9 @@ async function deleteCategory(id) {
   if (!confirm(`ลบหมวดหมู่ "${name}"?\nเมนูในหมวดหมู่นี้จะถูกลบตาม (ON DELETE CASCADE)`)) return;
 
   const out = await apiCall(`/menus/categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
-  if (!out || !out.data) return;
+  if (!out) return;
   if (!out.data.success) {
-    showToast(out.data.message || 'ลบไม่สำเร็จ', 'error');
+    showErrorDialog('ลบหมวดหมู่ไม่สำเร็จ', userFacingMessage(out.data));
     return;
   }
   showToast('✅ ลบหมวดหมู่แล้ว');
@@ -218,9 +271,9 @@ async function deleteCategory(id) {
 
 async function loadMenus() {
   const out = await apiCall('/menus', { method: 'GET' });
-  if (!out || !out.data) return;
+  if (!out) return;
   if (!out.data.success) {
-    showToast(out.data.message || 'โหลดเมนูไม่สำเร็จ', 'error');
+    showToast(userFacingMessage(out.data, 'โหลดเมนูไม่สำเร็จ'), 'error');
     return;
   }
   menus = out.data.data || [];
@@ -321,9 +374,9 @@ async function saveMenu() {
   btn.disabled = false;
   btn.textContent = 'บันทึกเมนู';
 
-  if (!out || !out.data) return;
+  if (!out) return;
   if (!out.data.success) {
-    showToast(out.data.message || 'บันทึกไม่สำเร็จ', 'error');
+    showErrorDialog('บันทึกเมนูไม่สำเร็จ', userFacingMessage(out.data));
     return;
   }
   showToast('✅ บันทึกเมนูแล้ว');
@@ -337,9 +390,9 @@ async function deleteMenu(id) {
   if (!confirm(`ลบเมนู "${name}"?`)) return;
 
   const out = await apiCall(`/menus/${encodeURIComponent(id)}`, { method: 'DELETE' });
-  if (!out || !out.data) return;
+  if (!out) return;
   if (!out.data.success) {
-    showToast(out.data.message || 'ลบไม่สำเร็จ', 'error');
+    showErrorDialog('ลบเมนูไม่สำเร็จ', userFacingMessage(out.data));
     return;
   }
   showToast('✅ ลบเมนูแล้ว');
@@ -362,6 +415,16 @@ function escapeHtml(str) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const okBtn = document.getElementById('errorDialogOk');
+  const back = document.getElementById('errorDialogBackdrop');
+  if (okBtn) okBtn.addEventListener('click', closeErrorDialog);
+  if (back) back.addEventListener('click', closeErrorDialog);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('errorDialog')?.classList.contains('is-open')) {
+      closeErrorDialog();
+    }
+  });
+
   const ok = await ensureAdmin();
   if (!ok) return;
 

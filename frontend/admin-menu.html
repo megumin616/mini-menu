@@ -73,7 +73,12 @@
       text-overflow: ellipsis;
     }
     .toast.show { transform: translateY(0); }
-    .toast.error { background: #c0392b; }
+    .toast.error {
+      background: linear-gradient(135deg, #A93226, #C0392B);
+      white-space: normal;
+      max-width: min(22rem, 92vw);
+      line-height: 1.45;
+    }
     .row {
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -190,6 +195,59 @@
     @media (max-width: 400px) {
       .tab { font-size: .78rem; padding: .5rem .4rem; }
     }
+
+    /* ── Error dialog (action failures: ลบ/บันทึก) ── */
+    .error-dialog-root {
+      position: fixed; inset: 0; z-index: 10000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.2rem;
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transition: opacity 0.22s ease, visibility 0.22s ease;
+    }
+    .error-dialog-root.is-open {
+      opacity: 1; visibility: visible; pointer-events: auto;
+    }
+    .error-dialog-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(27, 67, 50, 0.45);
+      backdrop-filter: blur(4px);
+    }
+    .error-dialog-card {
+      position: relative;
+      max-width: 28rem; width: 100%;
+      background: linear-gradient(180deg, #fff 0%, #faf8f4 100%);
+      border-radius: 20px;
+      padding: 1.35rem 1.4rem 1.25rem;
+      box-shadow: 0 20px 50px rgba(27, 67, 50, 0.2), 0 0 0 1px rgba(27, 67, 50, 0.07);
+      border-top: 4px solid #C0392B;
+      transform: scale(0.96) translateY(8px);
+      transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .error-dialog-root.is-open .error-dialog-card {
+      transform: scale(1) translateY(0);
+    }
+    .error-dialog-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(192, 57, 43, 0.12), rgba(192, 57, 43, 0.06));
+      color: #A93226;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; margin: 0 auto 0.85rem;
+    }
+    .error-dialog-title {
+      font-family: 'Playfair Display', serif;
+      text-align: center; font-size: 1.15rem; font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 0.5rem; line-height: 1.35;
+    }
+    .error-dialog-msg {
+      text-align: center; color: #4a5560;
+      font-size: 0.9rem; line-height: 1.5;
+      margin-bottom: 1.15rem;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .error-dialog-actions { display: flex; justify-content: center; }
+    .error-dialog-actions .btn { min-width: 10rem; }
   </style>
 </head>
 <body>
@@ -347,6 +405,19 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <div class="error-dialog-root" id="errorDialog" role="dialog" aria-modal="true" aria-labelledby="errorDialogTitle" aria-hidden="true">
+    <div class="error-dialog-backdrop" id="errorDialogBackdrop"></div>
+    <div class="error-dialog-card">
+      <div class="error-dialog-icon" aria-hidden="true">⚠️</div>
+      <h2 class="error-dialog-title" id="errorDialogTitle">ไม่สามารถดำเนินการได้</h2>
+      <p class="error-dialog-msg" id="errorDialogMsg">ข้อความ</p>
+      <div class="error-dialog-actions">
+        <button type="button" class="btn btn-primary" id="errorDialogOk">เข้าใจแล้ว</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/admin-menu.js"></script>
 </body>
 </html>

@@ -12,29 +12,72 @@ function getToken() {
 
 async function apiCall(url, options = {}) {
   const token = getToken();
-  const response = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...options.headers
-    }
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${url}`, {
+      ...options,
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers
+      }
+    });
+  } catch {
+    return { success: false, message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้' };
+  }
   if (response.status === 401) {
     localStorage.clear();
     window.location.href = 'index.html';
     return null;
   }
-  return response.json();
+  const text = await response.text();
+  if (!text) {
+    return response.ok
+      ? { success: true, data: null, message: '' }
+      : { success: false, message: response.statusText || 'ไม่มีข้อมูลจากเซิร์ฟเวอร์' };
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { success: false, message: 'รูปแบบคำตอบจากเซิร์ฟเวอร์ไม่ถูกต้อง' };
+  }
 }
 
 // ===================================================
 // loadOrder: ดึงข้อมูลออเดอร์ของโต๊ะนี้
 // ===================================================
 async function loadOrder() {
+  const loadingState = document.getElementById('loadingState');
+  const stillOnLoading = () => {
+    const d = getComputedStyle(loadingState).display;
+    return d && d !== 'none';
+  };
+
   try {
     const data = await apiCall('/orders/my-order');
     if (!data) return;
+
+    if (data.success === false) {
+      if (!stillOnLoading()) {
+        showToast(`❌ ${data.message || 'โหลดออเดอร์ไม่สำเร็จ'}`, 'error');
+        return;
+      }
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('orderContent').style.display = 'none';
+      loadingState.style.display = 'block';
+      loadingState.innerHTML =
+        '<div style="text-align:center;padding:0.5rem 0.25rem 0.25rem">' +
+        '<div style="font-size:1.5rem">⚠️</div>' +
+        '<p style="color:#A93226;font-size:0.9rem;font-weight:700;margin:0.6rem 0 0.2rem">โหลดออเดอร์ไม่สำเร็จ</p>' +
+        '<p style="color:#5c6168;font-size:0.86rem;margin-bottom:1rem;white-space:pre-wrap">' +
+        (data.message || 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ หรือเกิดข้อผิดพลาด') +
+        '</p>' +
+        '<button type="button" onclick="location.reload()" ' +
+        'style="background:var(--forest);color:white;border:none;border-radius:12px;padding:0.55rem 1.1rem;cursor:pointer;font-size:0.9rem">' +
+        '↻ ลองอีกครั้ง' +
+        '</button></div>';
+      return;
+    }
 
     document.getElementById('loadingState').style.display = 'none';
 
@@ -48,7 +91,12 @@ async function loadOrder() {
     renderOrder(data.data);
   } catch (err) {
     console.error('Load order error:', err);
-    document.getElementById('loadingState').innerHTML = `<p style="color:#c0392b">❌ โหลดออเดอร์ไม่สำเร็จ</p>`;
+    if (!stillOnLoading()) {
+      showToast('❌ โหลดออเดอร์ไม่สำเร็จ', 'error');
+    } else {
+      loadingState.innerHTML =
+        '<p style="color:#c0392b">❌ โหลดออเดอร์ไม่สำเร็จ กรุณาลองอีกครั้ง</p>';
+    }
   }
 }
 
