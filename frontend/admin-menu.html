@@ -196,6 +196,56 @@
       .tab { font-size: .78rem; padding: .5rem .4rem; }
     }
 
+    /* ── Confirm dialog (ยืนยันก่อน delete) ── */
+    .confirm-dialog-root {
+      position: fixed; inset: 0; z-index: 10001;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.2rem;
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transition: opacity 0.22s ease, visibility 0.22s ease;
+    }
+    .confirm-dialog-root.is-open {
+      opacity: 1; visibility: visible; pointer-events: auto;
+    }
+    .confirm-dialog-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(27, 67, 50, 0.5);
+      backdrop-filter: blur(4px);
+    }
+    .confirm-dialog-card {
+      position: relative;
+      max-width: 24rem; width: 100%;
+      background: linear-gradient(180deg, #fff 0%, #faf8f4 100%);
+      border-radius: 20px;
+      padding: 1.4rem 1.4rem 1.2rem;
+      box-shadow: 0 20px 50px rgba(27, 67, 50, 0.22), 0 0 0 1px rgba(27, 67, 50, 0.07);
+      border-top: 4px solid var(--terracotta);
+      transform: scale(0.95) translateY(10px);
+      transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .confirm-dialog-root.is-open .confirm-dialog-card {
+      transform: scale(1) translateY(0);
+    }
+    .confirm-dialog-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      background: linear-gradient(135deg, rgba(188,108,37,0.12), rgba(188,108,37,0.06));
+      color: var(--terracotta);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; margin: 0 auto 0.8rem;
+    }
+    .confirm-dialog-title {
+      font-family: 'Playfair Display', serif;
+      text-align: center; font-size: 1.1rem; font-weight: 700;
+      color: var(--forest); margin-bottom: 0.45rem; line-height: 1.35;
+    }
+    .confirm-dialog-msg {
+      text-align: center; color: #4a5560;
+      font-size: 0.88rem; line-height: 1.5; margin-bottom: 1.1rem;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .confirm-dialog-actions { display: flex; gap: 0.6rem; justify-content: center; }
+    .confirm-dialog-actions .btn { min-width: 7.5rem; }
+
     /* ── Error dialog (action failures: ลบ/บันทึก) ── */
     .error-dialog-root {
       position: fixed; inset: 0; z-index: 10000;
@@ -405,6 +455,19 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <div class="confirm-dialog-root" id="confirmDialog" role="dialog" aria-modal="true" aria-labelledby="confirmDialogTitle" aria-hidden="true">
+    <div class="confirm-dialog-backdrop" id="confirmDialogBackdrop"></div>
+    <div class="confirm-dialog-card">
+      <div class="confirm-dialog-icon" aria-hidden="true">🗑️</div>
+      <h2 class="confirm-dialog-title" id="confirmDialogTitle">ยืนยันการลบ</h2>
+      <p class="confirm-dialog-msg" id="confirmDialogMsg">คุณแน่ใจหรือไม่?</p>
+      <div class="confirm-dialog-actions">
+        <button type="button" class="btn btn-ghost" id="confirmDialogCancel">ยกเลิก</button>
+        <button type="button" class="btn btn-danger" id="confirmDialogOk">ลบ</button>
+      </div>
+    </div>
+  </div>
 
   <div class="error-dialog-root" id="errorDialog" role="dialog" aria-modal="true" aria-labelledby="errorDialogTitle" aria-hidden="true">
     <div class="error-dialog-backdrop" id="errorDialogBackdrop"></div>

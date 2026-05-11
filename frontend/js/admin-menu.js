@@ -47,6 +47,29 @@ function closeErrorDialog() {
   root.setAttribute('aria-hidden', 'true');
 }
 
+let _confirmResolve = null;
+
+function showConfirmDialog(message, title = 'ยืนยันการลบ') {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    const root = document.getElementById('confirmDialog');
+    if (!root) { resolve(window.confirm(message)); return; }
+    document.getElementById('confirmDialogTitle').textContent = title;
+    document.getElementById('confirmDialogMsg').textContent   = message;
+    root.classList.add('is-open');
+    root.setAttribute('aria-hidden', 'false');
+    setTimeout(() => document.getElementById('confirmDialogCancel')?.focus(), 50);
+  });
+}
+
+function closeConfirmDialog(result) {
+  const root = document.getElementById('confirmDialog');
+  if (!root) return;
+  root.classList.remove('is-open');
+  root.setAttribute('aria-hidden', 'true');
+  if (_confirmResolve) { _confirmResolve(result); _confirmResolve = null; }
+}
+
 function userFacingMessage(data, contextKey) {
   if (typeof humanizeApiError !== 'function') {
     return (data && data.message) ? String(data.message) : 'กรุณาลองอีกครั้ง';
@@ -261,7 +284,11 @@ async function saveCategory() {
 async function deleteCategory(id) {
   const c = categories.find(x => x.id === id);
   const name = c?.name || '';
-  if (!confirm(`ลบหมวดหมู่ "${name}"?\nเมนูในหมวดหมู่นี้จะถูกลบตาม (ON DELETE CASCADE)`)) return;
+  const ok = await showConfirmDialog(
+    `ลบหมวดหมู่ "${name}" ?\nเมนูทั้งหมดในหมวดนี้จะถูกลบตามไปด้วย`,
+    'ยืนยันลบหมวดหมู่'
+  );
+  if (!ok) return;
 
   const out = await apiCall(`/menus/categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (!out) return;
@@ -393,7 +420,8 @@ async function saveMenu() {
 async function deleteMenu(id) {
   const m = menus.find(x => x.id === id);
   const name = m?.name || '';
-  if (!confirm(`ลบเมนู "${name}"?`)) return;
+  const ok = await showConfirmDialog(`ลบเมนู "${name}" ?`, 'ยืนยันลบเมนู');
+  if (!ok) return;
 
   const out = await apiCall(`/menus/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (!out) return;
@@ -421,13 +449,24 @@ function escapeHtml(str) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Error dialog
   const okBtn = document.getElementById('errorDialogOk');
-  const back = document.getElementById('errorDialogBackdrop');
+  const back  = document.getElementById('errorDialogBackdrop');
   if (okBtn) okBtn.addEventListener('click', closeErrorDialog);
-  if (back) back.addEventListener('click', closeErrorDialog);
+  if (back)  back.addEventListener('click', closeErrorDialog);
+
+  // Confirm dialog
+  document.getElementById('confirmDialogOk')?.addEventListener('click', () => closeConfirmDialog(true));
+  document.getElementById('confirmDialogCancel')?.addEventListener('click', () => closeConfirmDialog(false));
+  document.getElementById('confirmDialogBackdrop')?.addEventListener('click', () => closeConfirmDialog(false));
+
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && document.getElementById('errorDialog')?.classList.contains('is-open')) {
-      closeErrorDialog();
+    if (e.key === 'Escape') {
+      if (document.getElementById('confirmDialog')?.classList.contains('is-open')) {
+        closeConfirmDialog(false);
+      } else if (document.getElementById('errorDialog')?.classList.contains('is-open')) {
+        closeErrorDialog();
+      }
     }
   });
 
