@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard รายได้ | Cafe' In The Garden</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --forest:    #1B4332;
+      --sage:      #52796F;
+      --cream:     #F8F4EF;
+      --beige:     #EDE8E0;
+      --terracotta:#BC6C25;
+      --gold:      #D4A017;
+    }
+    * { font-family:'Nunito',sans-serif; box-sizing:border-box; margin:0; padding:0; }
+    body { background:var(--cream); min-height:100vh; }
+    .display-font { font-family:'Playfair Display',serif; }
+
+    .topbar {
+      background: linear-gradient(135deg, var(--forest) 0%, var(--sage) 100%);
+      padding: 0.9rem 1.5rem;
+      display:flex; align-items:center; justify-content:space-between;
+      position:sticky; top:0; z-index:100;
+    }
+    .content { padding:1.2rem; max-width:1200px; margin:0 auto; }
+
+    /* Range tabs */
+    .range-tabs { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.2rem; }
+    .range-tab {
+      border:2px solid var(--beige); background:white;
+      border-radius:10px; padding:0.45rem 1rem;
+      font-weight:800; font-size:0.85rem; cursor:pointer; transition:all .2s;
+      color:#555;
+    }
+    .range-tab.active { border-color:var(--forest); background:var(--forest); color:white; }
+
+    /* Summary cards */
+    .cards-grid {
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:0.85rem;
+      margin-bottom:1.2rem;
+    }
+    .card {
+      background:white; border-radius:18px;
+      padding:1.1rem 1.2rem;
+      box-shadow:0 2px 12px rgba(27,67,50,0.08);
+    }
+    .card-label { font-size:0.78rem; color:#888; font-weight:700; margin-bottom:0.3rem; }
+    .card-value {
+      font-family:'Playfair Display',serif;
+      font-size:1.9rem; font-weight:700;
+      line-height:1.1;
+    }
+    .card-sub { font-size:0.75rem; color:#aaa; margin-top:0.2rem; }
+
+    /* 2-col main layout */
+    .main-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:0.85rem;
+      margin-bottom:0.85rem;
+    }
+
+    .panel {
+      background:white; border-radius:18px;
+      padding:1.1rem; box-shadow:0 2px 12px rgba(27,67,50,0.08);
+    }
+    .panel-title {
+      font-weight:900; color:var(--forest);
+      font-size:0.9rem; margin-bottom:0.85rem;
+      display:flex; align-items:center; gap:0.4rem;
+    }
+
+    /* Top items table */
+    .items-table { width:100%; border-collapse:collapse; }
+    .items-table th {
+      font-size:0.72rem; color:#999; text-transform:uppercase;
+      letter-spacing:0.04em; font-weight:900;
+      padding:0 0.4rem 0.5rem;
+      border-bottom:2px solid var(--beige);
+    }
+    .items-table th:last-child { text-align:right; }
+    .items-table td { padding:0.5rem 0.4rem; font-size:0.86rem; border-bottom:1px solid var(--cream); }
+    .items-table tr:last-child td { border-bottom:none; }
+    .rank-badge {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:22px; height:22px; border-radius:6px;
+      font-size:0.72rem; font-weight:900;
+    }
+    .rank-1 { background:rgba(212,160,23,0.2); color:#A07800; }
+    .rank-2 { background:rgba(107,114,128,0.15); color:#5a6068; }
+    .rank-3 { background:rgba(188,108,37,0.15); color:#955215; }
+    .rank-other { background:var(--cream); color:#aaa; }
+
+    /* Category bars */
+    .cat-row { margin-bottom:0.7rem; }
+    .cat-row:last-child { margin-bottom:0; }
+    .cat-bar-bg { background:var(--cream); border-radius:999px; height:8px; margin-top:0.3rem; }
+    .cat-bar-fill { height:8px; border-radius:999px; background:linear-gradient(90deg, var(--forest), var(--sage)); transition:width 0.5s ease; }
+
+    /* Payment pills */
+    .pay-row {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0.7rem 0.8rem;
+      background:var(--cream); border-radius:12px;
+      margin-bottom:0.5rem;
+    }
+    .pay-row:last-child { margin-bottom:0; }
+
+    /* Daily trend bars */
+    .trend-grid {
+      display:flex; align-items:flex-end; gap:0.4rem;
+      height:100px; padding-top:0.5rem;
+    }
+    .trend-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:0.25rem; }
+    .trend-bar-wrap { flex:1; width:100%; display:flex; align-items:flex-end; }
+    .trend-bar {
+      width:100%; border-radius:6px 6px 0 0;
+      background:linear-gradient(180deg, var(--sage), var(--forest));
+      min-height:3px; transition:height 0.5s ease;
+    }
+    .trend-date { font-size:0.62rem; color:#aaa; white-space:nowrap; }
+    .trend-val  { font-size:0.6rem; color:#888; font-weight:700; }
+
+    /* Loading / empty */
+    .loading-state { text-align:center; padding:2rem; color:#aaa; font-size:0.9rem; }
+
+    /* Btn */
+    .btn {
+      border:none; border-radius:10px; padding:0.55rem 0.9rem;
+      font-weight:800; cursor:pointer; transition:all .2s; font-size:0.85rem;
+    }
+    .btn-ghost {
+      background:rgba(255,255,255,0.15);
+      border:1px solid rgba(255,255,255,0.22);
+      color:white;
+    }
+    .btn-ghost:hover { background:rgba(255,255,255,0.25); }
+    .btn-danger-outline { background:rgba(239,68,68,0.22); border:1px solid rgba(239,68,68,0.35); color:#FCA5A5; }
+
+    /* Responsive */
+    @media (max-width:900px) {
+      .cards-grid { grid-template-columns:repeat(2,1fr); }
+      .main-grid  { grid-template-columns:1fr; }
+    }
+    @media (max-width:560px) {
+      .cards-grid { grid-template-columns:repeat(2,1fr); gap:0.6rem; }
+      .content { padding:0.8rem; }
+      .topbar { padding:0.75rem 1rem; }
+      .card-value { font-size:1.5rem; }
+    }
+    @media (max-width:340px) {
+      .cards-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div>
+      <div class="display-font" style="color:white;font-size:1.1rem;font-weight:700">📊 Dashboard รายได้</div>
+      <div style="color:rgba(255,255,255,0.65);font-size:0.75rem" id="whoami">-</div>
+    </div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="loadDashboard()">🔄 รีเฟรช</button>
+      <button class="btn btn-ghost" onclick="goBack()">← กลับ</button>
+      <button class="btn btn-danger-outline" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Range selector -->
+    <div class="range-tabs">
+      <button class="range-tab active" id="tab-today" onclick="setRange('today')">วันนี้</button>
+      <button class="range-tab" id="tab-7d"   onclick="setRange('7d')">7 วัน</button>
+      <button class="range-tab" id="tab-30d"  onclick="setRange('30d')">30 วัน</button>
+      <button class="range-tab" id="tab-all"  onclick="setRange('all')">ทั้งหมด</button>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="cards-grid" id="summaryCards">
+      <div class="card">
+        <div class="card-label">💰 รายได้รวม</div>
+        <div class="card-value" id="valRevenue" style="color:var(--terracotta)">-</div>
+        <div class="card-sub" id="subRevenue"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">🧾 บิลที่ชำระแล้ว</div>
+        <div class="card-value" id="valOrders" style="color:var(--forest)">-</div>
+        <div class="card-sub" id="subOrders"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">📈 ค่าเฉลี่ยต่อบิล</div>
+        <div class="card-value" id="valAvg" style="color:var(--sage)">-</div>
+        <div class="card-sub">ต่อออเดอร์</div>
+      </div>
+      <div class="card">
+        <div class="card-label">🟡 Active ตอนนี้</div>
+        <div class="card-value" id="valActive" style="color:#F59E0B">-</div>
+        <div class="card-sub">โต๊ะกำลังนั่งอยู่</div>
+      </div>
+    </div>
+
+    <!-- Main 2-col -->
+    <div class="main-grid">
+
+      <!-- Top items -->
+      <div class="panel">
+        <div class="panel-title">🏆 เมนูขายดี (Top 10)</div>
+        <div id="topItemsContent"><div class="loading-state">⏳ กำลังโหลด...</div></div>
+      </div>
+
+      <!-- Right col: Category + Payment -->
+      <div style="display:flex;flex-direction:column;gap:0.85rem">
+
+        <div class="panel">
+          <div class="panel-title">🍽️ รายได้ตามหมวดหมู่</div>
+          <div id="categoryContent"><div class="loading-state">⏳ กำลังโหลด...</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">💳 วิธีชำระเงิน</div>
+          <div id="paymentContent"><div class="loading-state">⏳ กำลังโหลด...</div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Daily trend -->
+    <div class="panel" id="trendPanel">
+      <div class="panel-title" id="trendTitle">📅 แนวโน้มรายได้ (7 วัน)</div>
+      <div id="trendContent"><div class="loading-state">⏳ กำลังโหลด...</div></div>
+    </div>
+
+  </div>
+
+  <script src="js/friendly-error.js"></script>
+  <script>
+    const API_BASE = 'https://cafe-in-the-garden.onrender.com/api';
+    let currentRange = 'today';
+
+    function getToken() { return localStorage.getItem('staffToken'); }
+
+    function logout() {
+      localStorage.removeItem('staffToken');
+      localStorage.removeItem('staffName');
+      localStorage.removeItem('staffRole');
+      window.location.href = 'staff-login.html';
+    }
+
+    function goBack() {
+      if (document.referrer) { history.back(); return; }
+      window.location.href = 'cashier.html';
+    }
+
+    async function apiCall(path) {
+      const token = getToken();
+      try {
+        const res = await fetch(`${API_BASE}${path}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401) { logout(); return null; }
+        return res.json();
+      } catch {
+        return null;
+      }
+    }
+
+    async function ensureAdmin() {
+      const token = getToken();
+      if (!token) { window.location.href = 'staff-login.html'; return false; }
+      const out = await apiCall('/auth/verify');
+      if (!out || !out.success) { window.location.href = 'staff-login.html'; return false; }
+      if (out.data?.role !== 'ADMIN') { window.location.href = 'cashier.html'; return false; }
+      const name = out.data?.fullName || localStorage.getItem('staffName') || '-';
+      document.getElementById('whoami').textContent = `เข้าสู่ระบบ: ${name}`;
+      return true;
+    }
+
+    function setRange(range) {
+      currentRange = range;
+      ['today','7d','30d','all'].forEach(r => {
+        document.getElementById(`tab-${r}`).classList.toggle('active', r === range);
+      });
+      loadDashboard();
+    }
+
+    async function loadDashboard() {
+      setLoading();
+      const out = await apiCall(`/dashboard?range=${currentRange}`);
+      if (!out || !out.success) {
+        setError();
+        return;
+      }
+      renderDashboard(out.data);
+    }
+
+    function setLoading() {
+      const ph = '<div class="loading-state">⏳ กำลังโหลด...</div>';
+      document.getElementById('topItemsContent').innerHTML   = ph;
+      document.getElementById('categoryContent').innerHTML   = ph;
+      document.getElementById('paymentContent').innerHTML    = ph;
+      document.getElementById('trendContent').innerHTML      = ph;
+      document.getElementById('valRevenue').textContent = '-';
+      document.getElementById('valOrders').textContent  = '-';
+      document.getElementById('valAvg').textContent     = '-';
+      document.getElementById('valActive').textContent  = '-';
+    }
+
+    function setError() {
+      const msg = '<div class="loading-state" style="color:#e55">❌ โหลดข้อมูลไม่สำเร็จ</div>';
+      ['topItemsContent','categoryContent','paymentContent','trendContent']
+        .forEach(id => document.getElementById(id).innerHTML = msg);
+    }
+
+    function fmtBaht(n) {
+      return '฿' + Number(n || 0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function renderDashboard(d) {
+      const { summary, byPayment, topItems, byCategory, daily } = d;
+
+      // Summary cards
+      document.getElementById('valRevenue').textContent = fmtBaht(summary.totalRevenue);
+      document.getElementById('valOrders').textContent  = summary.orderCount.toLocaleString();
+      document.getElementById('valAvg').textContent     = fmtBaht(summary.avgBill);
+      document.getElementById('valActive').textContent  = summary.activeNow;
+
+      const rangeLabel = { today:'วันนี้', '7d':'7 วัน', '30d':'30 วัน', all:'ทั้งหมด' }[currentRange];
+      document.getElementById('subRevenue').textContent = `ช่วง: ${rangeLabel}`;
+      document.getElementById('subOrders').textContent  = `ช่วง: ${rangeLabel}`;
+
+      // Top items
+      if (!topItems.length) {
+        document.getElementById('topItemsContent').innerHTML = '<div class="loading-state">ยังไม่มีข้อมูล</div>';
+      } else {
+        document.getElementById('topItemsContent').innerHTML = `
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width:32px">#</th>
+                <th>เมนู</th>
+                <th style="text-align:right">จำนวน</th>
+                <th style="text-align:right">รายได้</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${topItems.map((item, i) => `
+                <tr>
+                  <td><span class="rank-badge rank-${i < 3 ? i+1 : 'other'}">${i+1}</span></td>
+                  <td style="font-weight:700;color:#2C2C2C">${escHtml(item.name)}</td>
+                  <td style="text-align:right;color:#555">${Number(item.qty).toLocaleString()}</td>
+                  <td style="text-align:right;font-weight:800;color:var(--terracotta)">${fmtBaht(item.revenue)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      // Category
+      const maxCatRevenue = byCategory.reduce((m, c) => Math.max(m, Number(c.revenue)), 0) || 1;
+      if (!byCategory.length) {
+        document.getElementById('categoryContent').innerHTML = '<div class="loading-state">ยังไม่มีข้อมูล</div>';
+      } else {
+        document.getElementById('categoryContent').innerHTML = byCategory.map(c => `
+          <div class="cat-row">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:0.85rem;font-weight:700;color:#2C2C2C">${escHtml(c.icon || '')} ${escHtml(c.category)}</span>
+              <span style="font-size:0.82rem;font-weight:800;color:var(--terracotta)">${fmtBaht(c.revenue)}</span>
+            </div>
+            <div class="cat-bar-bg">
+              <div class="cat-bar-fill" style="width:${Math.round(Number(c.revenue)/maxCatRevenue*100)}%"></div>
+            </div>
+            <div style="font-size:0.72rem;color:#aaa;margin-top:0.15rem">${Number(c.qty).toLocaleString()} ชิ้น</div>
+          </div>
+        `).join('');
+      }
+
+      // Payment method
+      const methodLabel = { CASHIER:'💵 เงินสด', PROMPTPAY:'📱 QR PromptPay' };
+      if (!byPayment.length) {
+        document.getElementById('paymentContent').innerHTML = '<div class="loading-state">ยังไม่มีข้อมูล</div>';
+      } else {
+        document.getElementById('paymentContent').innerHTML = byPayment.map(p => `
+          <div class="pay-row">
+            <span style="font-weight:700;font-size:0.88rem">${methodLabel[p.method] || escHtml(p.method)}</span>
+            <div style="text-align:right">
+              <div style="font-weight:900;font-size:0.9rem;color:var(--forest)">${fmtBaht(p.total)}</div>
+              <div style="font-size:0.72rem;color:#aaa">${Number(p.count).toLocaleString()} บิล</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Daily trend
+      const trendDays = currentRange === '30d' ? 30 : 7;
+      document.getElementById('trendTitle').textContent = `📅 แนวโน้มรายได้ (${trendDays} วันล่าสุด)`;
+
+      if (!daily.length) {
+        document.getElementById('trendContent').innerHTML = '<div class="loading-state">ยังไม่มีข้อมูล</div>';
+      } else {
+        // Fill missing days with 0
+        const dateMap = {};
+        daily.forEach(d => { dateMap[d.date] = d; });
+
+        const cols = [];
+        for (let i = trendDays - 1; i >= 0; i--) {
+          const dt = new Date();
+          dt.setDate(dt.getDate() - i);
+          const key = dt.toISOString().slice(0, 10);
+          cols.push({ date: key, revenue: dateMap[key]?.revenue || 0, orders: dateMap[key]?.orders || 0 });
+        }
+
+        const maxRev = cols.reduce((m, c) => Math.max(m, Number(c.revenue)), 0) || 1;
+
+        document.getElementById('trendContent').innerHTML = `
+          <div class="trend-grid">
+            ${cols.map(c => {
+              const pct = Math.round(Number(c.revenue) / maxRev * 100);
+              const dt  = new Date(c.date + 'T00:00:00');
+              const label = `${dt.getDate()}/${dt.getMonth()+1}`;
+              return `
+                <div class="trend-col">
+                  ${Number(c.revenue) > 0
+                    ? `<div class="trend-val">${fmtBaht(c.revenue).replace('฿','')}</div>`
+                    : '<div class="trend-val" style="visibility:hidden">0</div>'}
+                  <div class="trend-bar-wrap">
+                    <div class="trend-bar" style="height:${pct}%"></div>
+                  </div>
+                  <div class="trend-date">${label}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+    }
+
+    function escHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const ok = await ensureAdmin();
+      if (!ok) return;
+      await loadDashboard();
+    });
+  </script>
+</body>
+</html>
