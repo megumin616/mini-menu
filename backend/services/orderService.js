@@ -251,13 +251,18 @@ async function closeTable(tableId, paymentMethod) {
   try {
     await conn.beginTransaction();
 
-    // อัปเดต order เป็น PAID
-    await conn.query(
-      "UPDATE orders SET status = 'PAID', payment_method = ? WHERE table_id = ? AND status = 'BILL_REQUESTED'",
+    // รับชำระได้ทั้งตอนลูกค้ารอกเก็บเงิน (BILL_REQUESTED) และตอนยังสั่งอยู่ (ACTIVE)
+    // เดิมรับเฉพาะ BILL_REQUESTED ทำให้แคชเชียร์กดรับเงินตอนโต๊ะ "กำลังสั่ง" แล้วบิลไม่เป็น PAID → dashboard ไม่มีรายได้
+    const [orderResult] = await conn.query(
+      `UPDATE orders SET status = 'PAID', payment_method = ?
+       WHERE table_id = ? AND status IN ('ACTIVE', 'BILL_REQUESTED')`,
       [paymentMethod, tableId]
     );
 
-    // รีเซ็ตสถานะโต๊ะเป็น AVAILABLE
+    if (orderResult.affectedRows === 0) {
+      throw new Error('ไม่พบบิลที่รอชำระเงินสำหรับโต๊ะนี้');
+    }
+
     await conn.query(
       "UPDATE tables SET status = 'AVAILABLE' WHERE id = ?",
       [tableId]
