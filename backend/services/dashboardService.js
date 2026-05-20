@@ -1,12 +1,29 @@
 const db = require('../config/db');
 
+/** ใช้ updated_at = เวลาที่บิลมีการเปลี่ยนล่าสุด — กับบิล PAID จะตรงกับช่วงที่ชำระเงิน (เคลียร์โต๊ะ) ไม่ใช่แค่เปิดบิล */
 function dateFilter(range, alias = 'o') {
   switch (range) {
-    case 'today': return `AND DATE(${alias}.created_at) = CURDATE()`;
-    case '7d':    return `AND ${alias}.created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`;
-    case '30d':   return `AND ${alias}.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)`;
-    default:      return '';
+    case 'today':
+      return `AND DATE(${alias}.updated_at) = CURDATE()`;
+    case '7d':
+      return `AND ${alias}.updated_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)`;
+    case '30d':
+      return `AND ${alias}.updated_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)`;
+    default:
+      return '';
   }
+}
+
+function formatSqlDate(d) {
+  if (d == null) return '';
+  if (d instanceof Date) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  const s = String(d);
+  return s.length >= 10 ? s.slice(0, 10) : s;
 }
 
 async function getDashboardData(range = 'today') {
@@ -66,15 +83,15 @@ async function getDashboardData(range = 'today') {
   const trendDays = range === '30d' ? 30 : 7;
   const [daily] = await db.query(`
     SELECT
-      DATE(o.created_at)  AS date,
+      DATE(o.updated_at)  AS date,
       SUM(o.total_amount) AS revenue,
       COUNT(*)            AS orders
     FROM orders o
     WHERE o.status = 'PAID'
-      AND o.created_at >= DATE_SUB(CURDATE(), INTERVAL ${trendDays} DAY)
-    GROUP BY DATE(o.created_at)
+      AND o.updated_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+    GROUP BY DATE(o.updated_at)
     ORDER BY date ASC
-  `);
+  `, [trendDays]);
 
   return {
     summary: {
@@ -86,7 +103,11 @@ async function getDashboardData(range = 'today') {
     byPayment,
     topItems,
     byCategory,
-    daily
+    daily: daily.map((row) => ({
+      date: formatSqlDate(row.date),
+      revenue: Number(row.revenue),
+      orders: Number(row.orders)
+    }))
   };
 }
 
